@@ -60,8 +60,15 @@ def add_sleep(user_name, action_type):
 
 		conn.commit()
 
-if __name__ == "__main__":
-    print("Тестуємо базу даних...")
-    init_db()
-    add_feeding("Тест-Тато", 120)
-    print("Запис додано успішно!")
+def get_feeding_report(days=3):
+	with get_connection() as conn:
+		cursor = conn.cursor()
+
+		cursor.execute('''
+			SELECT SUM(volume_ml) FROM feedings
+			WHERE timestamp >= date('now', '-3 days')
+		''')
+
+		result = cursor.fetchone()[0]
+
+		return result if result else 0

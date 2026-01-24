@@ -44,6 +44,22 @@ async def process_feeding(message: types.Message):
 		logging.error(f"Помилка при записі годування {e}")
 		await message.answer("Ой, щось пішло не за планом")
 
+
+@dp.message(F.text.endswith("📊 Звіт"))
+async def show_report(message: types.Message):
+	total_volume = database.get_feeding_report(days=3)
+
+	if total_volume > 0:
+		response_text = (
+			f"📊 **Звіт за останні 3 дні**\n\n"
+            f"Загальна кількість суміші: **{total_volume} мл**\n"
+            f"Це приблизно {round(total_volume / 1000, 2)} л. 🍼"
+		)
+	else:
+		response_text = "За останні	3 дні записів про годування не знайдено"
+
+	await message.answer(response_text, parse_mode="Markdown")
+
 async def main():
 	database.init_db()
 	print("Бот запущений")
