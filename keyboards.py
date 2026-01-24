@@ -5,10 +5,10 @@ def main_menu () -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
 	builder.button(text="🍼 Годування")
 	builder.button(text="😴 Сон")
-    builder.button(text="📊 Звіт")
+	builder.button(text="📊 Звіт")
 
-    builder.adjust(2)
-    return builder.as_markup(resize_keyboard=True)
+	builder.adjust(2)
+	return builder.as_markup(resize_keyboard=True)
 
 def feeding_levels () -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
