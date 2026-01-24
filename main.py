@@ -1,6 +1,5 @@
 import asyncio
-import sqlite3
-import logging
+import database
 from datetime import datetime
 
 from aiogram import Bot, Dispatcher, types, F
@@ -16,29 +15,6 @@ bot = Bot(token=tokenTelegram.API_TOKEN)
 
 db = Dispatcher()
 
-def init_db():
-	conn = sqlite3.connect('baby_tracker.db')
-	cursor = conn.cursor()
-
-	# Table from feedings
-	cursor.execute ('''
-		CREATE TABLE IF NOT EXISTS feedings (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_name TEXT,
-			volume_ml INTEGER,
-			timestamp TEXT
-		)	
-	''')
-
-	# Table from sleeping
-	cursor.execute('''
-		CREATE TABLE IF NOT EXISTS sleep (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_name TEXT,
-			start_time TEXT,
-			end_time TEXT
-		)
-	''')
-
-	conn.commit()
-	conn.close()
+async def main():
+	database.init_db()
+	await db.start_polling(bot)
