@@ -74,7 +74,7 @@ async def process_sleep(message: types.Message):
 
 @dp.message(F.text == "📊 Звіт")
 async def show_report(message: types.Message):
-    feed_data = database.get_feedings_report_by_days(days=3)
+    feed_data = database.get_feeding_report_by_days(days=3)
     sleep_data = dict(database.get_sleep_report_by_days(days=3))
     
     report_lines = ["📊 **Звіт за останні дні**\n"]

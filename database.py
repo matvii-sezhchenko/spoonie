@@ -138,16 +138,16 @@ def get_feeding_report_by_days(days=3):
 		cursor = conn.cursor()
 
 		cursor.execute('SELECT volume_ml, timestamp FROM feedings')
-        rows = cursor.fetchall()
-        
-        daily_feed = {}
-        
-        for volume, ts_str in rows:
-            try:
-                date_part = ts_str.split()[0] 
-                daily_feed[date_part] = daily_feed.get(date_part, 0) + volume
-            except:
-                continue
-        
-        sorted_feed = sorted(daily_feed.items(), key=lambda x: x[0], reverse=True)[:days]
-        return sorted_feed
+		rows = cursor.fetchall()
+		
+		daily_feed = {}
+		
+		for volume, ts_str in rows:
+			try:
+				date_part = ts_str.split()[0] 
+				daily_feed[date_part] = daily_feed.get(date_part, 0) + volume
+			except:
+				continue
+		
+		sorted_feed = sorted(daily_feed.items(), key=lambda x: x[0], reverse=True)[:days]
+		return sorted_feed
