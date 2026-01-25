@@ -51,6 +51,7 @@ async def process_feeding(message: types.Message):
 		if active_sleep:
 			database.finish_sleep_auto(minutes_ago=10)
 			sleep_info = f"\n\nℹ️ Автоматично закрито сон (10 хв тому)."
+			await message.answer(sleep_info)
 
 		await message.answer(
 			f"✅ Записано: {volume} мл ({user})",
@@ -60,6 +61,13 @@ async def process_feeding(message: types.Message):
 		logging.error(f"Помилка при записі годування {e}")
 		await message.answer("Ой, щось пішло не за планом")
 
+
+@dp.message(F.text == "Відмінити")
+async def cancel_action(message: types.Message):
+	await message.answer(
+		"Дію скасовано, повернення в основне меню.",
+		reply_markup=keyboards.main_menu()
+	)
 
 @dp.message(F.text.endswith("😴 Сон"))
 async def process_sleep(message: types.Message):
