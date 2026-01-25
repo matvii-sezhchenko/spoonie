@@ -10,7 +10,6 @@ matplotlib.use('Agg')
 
 from datetime import datetime
 
-from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 
@@ -21,11 +20,8 @@ import keyboards
 
 logging.basicConfig(level=logging.INFO)
 
-if os.path.exists('/home/MattiasMelton'): # Шлях вашої папки на сервері
-	session = AiohttpSession(proxy="http://proxy.server:3128")
-	bot = Bot(token=tokenTelegram.API_TOKEN_BABY_TRACKER, session=session)
-else:
-	bot = Bot(token=tokenTelegram.API_TOKEN_TEST)
+
+bot = Bot(token=tokenTelegram.API_TOKEN_BABY_TRACKER)
 
 dp = Dispatcher()
 
