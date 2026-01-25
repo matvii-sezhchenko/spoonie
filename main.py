@@ -28,6 +28,7 @@ async def show_feeding_options (message: types.Message):
 		reply_markup=keyboards.feeding_levels()
 	)
 
+
 @dp.message(F.text.endswith("мл"))
 async def process_feeding(message: types.Message):
 	user = message.from_user.first_name
@@ -36,6 +37,13 @@ async def process_feeding(message: types.Message):
 		volume  = int (message.text.split()[0])
 		database.add_feeding(user, volume)
 
+		active_sleep = database.get_active_sleep()
+		sleep_info = ""
+
+		if active_sleep:
+			database.finish_sleep_auto(minutes_ago=10)
+			sleep_info = f"\n\nℹ️ Автоматично закрито сон (10 хв тому)."
+
 		await message.answer(
 			f"✅ Записано: {volume} мл ({user})",
 			reply_markup=keyboards.main_menu()
@@ -43,6 +51,24 @@ async def process_feeding(message: types.Message):
 	except Exception as e:
 		logging.error(f"Помилка при записі годування {e}")
 		await message.answer("Ой, щось пішло не за планом")
+
+
+@dp.message(F.text.endswith("😴 Сон"))
+async def process_sleep(message: types.Message):
+	user = message.from_user.first_name
+	active_sleep = database.get_active_sleep()
+
+	if not active_sleep:
+		database.start_sleep(user)
+		await message.answer(f"💤 {user} відмітив, що малюк заснув.")
+	else:
+		start_id, start_time, start_user = active_sleep
+		database.finish_sleep()
+		await message.answer(
+			f"☀️ Малюк прокинувся!\n\n"
+            f"Заснув о: {start_time} (відмітив {start_user})\n"
+            f"Прокинувся о: {datetime.now().strftime('%H:%M')} (відмітив {user})"
+		)
 
 
 @dp.message(F.text.endswith("📊 Звіт"))

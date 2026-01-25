@@ -2,6 +2,8 @@ import sqlite3
 import logging
 from datetime import datetime
 
+TIME_FORMAT = "%d.%m %H:%M"
+
 DB_NAME = 'baby_tracker.db'
 
 def get_connection():
@@ -39,7 +41,7 @@ def add_feeding(user_name, volume):
 	with get_connection() as conn:
 		cursor = conn.cursor()
 
-		now = datetime.now().strftime("%d.%m %H:%M")
+		now = datetime.now().strftime(TIME_FORMAT)
 
 		cursor.execute(
 			'INSERT INTO feedings (user_name, volume_ml, timestamp) VALUES (?,?,?)', (user_name, volume, now)
@@ -52,13 +54,58 @@ def add_sleep(user_name, action_type):
 	with get_connection() as conn:
 		cursor = conn.cursor()
 
-		now = datetime.now().strftime("%d.%m %H:%M")
+		now = datetime.now().strftime(TIME_FORMAT)
 
 		cursor.execute(
 			'INSERT INTO sleep (user_name, start_time) VALUES (?,?)', (user_name, f"{action_type}: {now}")
 		)
 
 		conn.commit()
+
+def get_active_sleep():
+	with get_connection() as conn:
+		cursor = conn.cursor()
+		cursor.execute('SELECT id, start_time, user_name FROM sleep WHERE end_time IS NULL LIMIT 1')
+		return cursor.fetchone()
+
+def start_sleep(user_name):
+	now = datetime.now().strftime(TIME_FORMAT)
+	with get_connection() as conn:
+		cursor = conn.cursor()
+		cursor.execute(
+			'INSERT INTO sleep (user_name, start_time) VALUES (?, ?)', (user_name, now)
+		)
+		conn.commit()
+
+def finish_sleep ():
+	now = datetime.now().strftime(TIME_FORMAT)
+	with get_connection() as conn:
+		cursor = conn.cursor()
+		active_sleep = get_active_sleep()
+		if active_sleep:
+			sleep_id = active_sleep[0]
+			cursor.execute(
+				'UPDATE sleep SET end_time = ? WHERE id = ?', (now, sleep_id)
+			)
+			conn.commit()
+			return active_sleep
+		return None
+
+def finish_sleep_auto ():
+	wake_time = (datetime.now() - timedelta(minutes=minutes_ago)).star_time(TIME_FORMAT)
+	with get_connection() as conn:
+		cursor = conn.cursor()
+
+		active_sleep = get_active_sleep()
+		if active_sleep:
+			sleep_id = active_sleep[0]
+			cursor.execute(
+				'UPDATE sleep SET end_time = ? WHERE id = ?', (wake_time, sleep_id)
+			)
+			conn.commit()
+			return active_sleep
+		return None
+
 
 def get_feeding_report(days=3):
 	with get_connection() as conn:
