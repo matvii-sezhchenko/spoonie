@@ -120,33 +120,6 @@ def finish_sleep_auto (minutes_ago=10):
 		return None
 
 
-def get_sleep_report_by_days(days=3):
-	with get_connection() as conn:
-		cursor = conn.cursor()
-
-		cursor.execute('SELECT start_time, end_time FROM sleep WHERE end_time IS NOT NULL')
-		rows = cursor.fetchall()
-
-		daily_sleep = {}
-		fmt = "%d.%m %H:%M"
-
-		for start_str, end_str in rows:
-			try:
-				start_dt = datetime.strftime(start_str, fmt)
-				end_dt = datetime.strftime(end_str, fmt)
-
-				day_key = start_dt.startime("%d.%m.%Y")
-
-				duration = (end_dt - start_dt).total_seconds() / 60
-
-				daily_sleep[day_key] = daily_sleep.get(day_key, 0) + duration
-			except:
-				continue
-
-	sorted_days = sorted(daily_sleep.items(), reverse=True)[:days]
-	return sorted_days
-
-
 def add_diaper(user, diaper_type):
 	timestamp = datetime.now().strftime(TIME_FORMAT)
 	with get_connection() as conn:
@@ -158,21 +131,46 @@ def add_diaper(user, diaper_type):
 		conn.commit()
 
 
-def get_feeding_report_by_days(days=3):
+def get_last_feeding():
+	with get_connection() as conn:
+		cursor = conn.cursor()
+		cursor.execute('SELECT volume_ml, timestamp FROM feedings ORDER BY id DESC LIMIT 1')
+		row = cursor.fetchone()
+		return row
+
+
+def get_full_report_data(days=3):
 	with get_connection() as conn:
 		cursor = conn.cursor()
 
-		cursor.execute('SELECT volume_ml, timestamp FROM feedings')
-		rows = cursor.fetchall()
-		
-		daily_feed = {}
-		
-		for volume, ts_str in rows:
+		cursor.execute('''
+			SELECT SUBSTR(timestamp, 1, 5) as day, COUNT(*), SUM(volume_ml)
+			FROM feedings GROUP BY day ORDER BY id DESC LIMIT ?
+		''', (days,))
+		feeds = {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
+
+		cursor.execute('''
+			SELECT SUBSTR(timestamp, 1, 5) as day, COUNT(*)
+			FROM diapers WHERE type != '🤮 Зригнув'
+			GROUP BY day ORDER BY id DESC LIMIT ?
+		''', (days,))
+		diapers = {row[0]: row[1] for row in cursor.fetchall()}
+
+		cursor.execute('''
+			SELECT SUBSTR(start_time, 1, 5) as day, start_time, end_time
+			FROM sleep WHERE end_time IS NOT NULL
+		''')
+		sleep_rows = cursor.fetchall()
+		sleep_stats = {}
+		fmt = "%d.%m %H:%M"
+		for day, start, end in sleep_rows:
 			try:
-				date_part = ts_str.split()[0] 
-				daily_feed[date_part] = daily_feed.get(date_part, 0) + volume
-			except:
-				continue
-		
-		sorted_feed = sorted(daily_feed.items(), key=lambda x: x[0], reverse=True)[:days]
-		return sorted_feed
+				duration = (datetime.strptime(end, fmt) - datetime.strptime(start, fmt)).total_seconds() / 3600
+				sleep_stats[day] = sleep_stats.get(day, 0) + duration
+			except: continue
+
+		# 4. Всі годування для розрахунку середнього інтервалу
+		cursor.execute("SELECT timestamp FROM feedings ORDER BY id DESC LIMIT 50")
+		all_times = [row[0] for row in cursor.fetchall()]
+
+		return feeds, diapers, sleep_stats, all_times

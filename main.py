@@ -1,6 +1,13 @@
 import asyncio
 import logging
 import os
+
+import matplotlib.pyplot as plt
+import io
+
+import matplotlib
+matplotlib.use('Agg')
+
 from datetime import datetime
 
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -30,10 +37,20 @@ async def cmd_start(message: types.Message):
 	)
 
 @dp.message(F.text == "🍼 Годування")
-async def show_feeding_options (message: types.Message):
+async def show_feeding_menu (message: types.Message):
+	last_feed = database.get_last_feeding()
+	
+	if last_feed:
+		volume, timestamp = last_feed
+		time_only = timestamp.split()[1] 
+		text = f"Останнє годування: **{time_only}** ({volume} мл).\n\nСкільки малюк з'їв зараз?"
+	else:
+		text = "Даних про годування ще немає. Скільки малюк з'їв?"
+
 	await message.answer(
-		"Скількі мл спожито?",
-		reply_markup=keyboards.feeding_levels()
+		text, 
+		reply_markup=keyboards.feeding_levels(),
+		parse_mode="Markdown"
 	)
 
 @dp.message(F.text == "🧷 Підгузок")
@@ -76,7 +93,6 @@ async def process_feeding(message: types.Message):
 		logging.error(f"Помилка при записі годування {e}")
 		await message.answer("Ой, щось пішло не за планом")
 
-
 @dp.message(F.text == "Відмінити")
 async def cancel_action(message: types.Message):
 	await message.answer(
@@ -103,27 +119,48 @@ async def process_sleep(message: types.Message):
 
 
 @dp.message(F.text == "📊 Звіт")
-async def show_report(message: types.Message):
-	feed_data = database.get_feeding_report_by_days(days=3)
-	sleep_data = dict(database.get_sleep_report_by_days(days=3))
+async def show_report_menu(message: types.Message):
+	await message.answer("Оберіть тип звіту:", reply_markup=keyboards.report_menu())
+
+@dp.message(F.text == "📋 Стандартний (3 дні)")
+async def standard_report(message: types.Message):
+	feeds, diapers, sleep, all_times = database.get_full_report_data(days=3)
 	
-	report_lines = ["📊 **Звіт за останні дні**\n"]
+	intervals = []
+	fmt = "%d.%m %H:%M"
+	for i in range(len(all_times)-1):
+		t1, t2 = datetime.strptime(all_times[i], fmt), datetime.strptime(all_times[i+1], fmt)
+		diff = abs((t1 - t2).total_seconds() / 60)
+		if diff < 600: intervals.append(diff)
 	
-	all_dates = sorted(set([d for d, _ in feed_data] + list(sleep_data.keys())), reverse=True)[:3]
+	avg_int_total = sum(intervals)/len(intervals) if intervals else 0
+	avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
+
+	avg_diapers = sum(diapers.values()) / len(diapers) if diapers else 0
+	
+	avg_sleep = sum(sleep.values()) / len(sleep) if sleep else 0
+
+	lines = [
+		f"⏱ Середній інтервал годування: **{avg_h:02d}:{avg_m:02d}**",
+		f"🧷 Середня зміна підгузків на добу: **{int(avg_diapers)}**",
+		f"😴 Загальна кількість сну: **{int(avg_sleep)} годин**\n"
+	]
+
+	all_dates = sorted(set(list(feeds.keys()) + list(diapers.keys()) + list(sleep.keys())), reverse=True)[:3]
+	current_year = datetime.now().year
 
 	for date in all_dates:
-		volume = next((v for d, v in feed_data if d == date), 0)
+		f_count, f_vol = feeds.get(date, (0, 0))
+		d_count = diapers.get(date, 0)
+		s_hours = int(sleep.get(date, 0))
 		
-		total_min = sleep_data.get(date, 0)
-		h = int(total_min // 60)
-		m = int(total_min % 60)
-		
-		report_lines.append(f"🗓 **{date}**")
-		report_lines.append(f"🍼 Їжа: {volume} мл")
-		report_lines.append(f"😴 Сон: {h} год {m} хв")
-		report_lines.append("---")
+		lines.append(f"🗓 **{date}.{current_year}:**")
+		lines.append(f"Кількість прийомів їжі: {f_count}, спожитий об'єм {f_vol} мл")
+		lines.append(f"Витрата підгузків: {d_count} шт")
+		lines.append(f"Сон: {s_hours} годин\n")
 
-	await message.answer("\n".join(report_lines), parse_mode="Markdown")
+	await message.answer("\n".join(lines), parse_mode="Markdown")
+
 
 async def main():
 	database.init_db()
