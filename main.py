@@ -72,33 +72,28 @@ async def process_sleep(message: types.Message):
 		)
 
 
-@dp.message(F.text.endswith("📊 Звіт"))
+@dp.message(F.text == "📊 Звіт")
 async def show_report(message: types.Message):
-	total_volume = database.get_feeding_report(days=3)
-	daily_sleep_data = database.get_sleep_report_by_days(days=3)
+    feed_data = database.get_feedings_report_by_days(days=3)
+    sleep_data = dict(database.get_sleep_report_by_days(days=3))
+    
+    report_lines = ["📊 **Звіт за останні дні**\n"]
+    
+    all_dates = sorted(set([d for d, _ in feed_data] + list(sleep_data.keys())), reverse=True)[:3]
 
-	sleep_text = ""
+    for date in all_dates:
+        volume = next((v for d, v in feed_data if d == date), 0)
+        
+        total_min = sleep_data.get(date, 0)
+        h = int(total_min // 60)
+        m = int(total_min % 60)
+        
+        report_lines.append(f"🗓 **{date}**")
+        report_lines.append(f"🍼 Їжа: {volume} мл")
+        report_lines.append(f"😴 Сон: {h} год {m} хв")
+        report_lines.append("---")
 
-	if daily_sleep_data:
-		for day, total_min in daily_sleep_data:
-			h = int(total_min // 60)
-			m = int(total_min % 60)
-			sleep_text += f"🔹 {day} — **{h} год. {m} хв.**\n"
-	else:
-		sleep_text = "Даних про сон ще немає."
-
-	if total_volume > 0:
-		response_text = (
-			f"📊 **Звіт за останні 3 дні**\n\n"
-			f"Загальна кількість суміші: **{total_volume} мл**\n"
-			f"Це приблизно {round(total_volume / 1000, 2)} \n\n"
-			f"😴 **Сон по днях:**\n"
-			f"{sleep_text}"
-		)
-	else:
-		response_text = "За останні 3s дні записів про годування не знайдено"
-
-	await message.answer(response_text, parse_mode="Markdown")
+    await message.answer("\n".join(report_lines), parse_mode="Markdown")
 
 async def main():
 	database.init_db()

@@ -133,15 +133,21 @@ def get_sleep_report_by_days(days=3):
 	return sorted_days
 
 
-def get_feeding_report(days=3):
+def get_feeding_report_by_days(days=3):
 	with get_connection() as conn:
 		cursor = conn.cursor()
 
-		cursor.execute('''
-			SELECT SUM(volume_ml) FROM feedings
-			WHERE timestamp >= date('now', '-3 days')
-		''')
-
-		result = cursor.fetchone()[0]
-
-		return result if result else 0
+		cursor.execute('SELECT volume_ml, timestamp FROM feedings')
+        rows = cursor.fetchall()
+        
+        daily_feed = {}
+        
+        for volume, ts_str in rows:
+            try:
+                date_part = ts_str.split()[0] 
+                daily_feed[date_part] = daily_feed.get(date_part, 0) + volume
+            except:
+                continue
+        
+        sorted_feed = sorted(daily_feed.items(), key=lambda x: x[0], reverse=True)[:days]
+        return sorted_feed
