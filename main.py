@@ -15,10 +15,10 @@ import keyboards
 logging.basicConfig(level=logging.INFO)
 
 if os.path.exists('/home/MattiasMelton'): # Шлях вашої папки на сервері
-    session = AiohttpSession(proxy="http://proxy.server:3128")
-    bot = Bot(token=tokenTelegram.API_TOKEN, session=session)
+	session = AiohttpSession(proxy="http://proxy.server:3128")
+	bot = Bot(token=tokenTelegram.API_TOKEN, session=session)
 else:
-    bot = Bot(token=tokenTelegram.API_TOKEN)
+	bot = Bot(token=tokenTelegram.API_TOKEN)
 
 dp = Dispatcher()
 
@@ -36,6 +36,21 @@ async def show_feeding_options (message: types.Message):
 		reply_markup=keyboards.feeding_levels()
 	)
 
+@dp.message(F.text == "🧷 Підгузок")
+async def show_diaper_menu(message: types.Message):
+	await message.answer("Що саме зачудив?", reply_markup=keyboards.diaper_menu())
+
+@dp.message(F.text.in_(["💦 По-малому", "💩 По-великому", "🌟 Все разом", "🤮 Зригнув"]))
+async def process_diaper(message: types.Message):
+	user = message.from_user.first_name
+	diaper_type = message.text
+	
+	database.add_diaper(user, diaper_type)
+	
+	await message.answer(
+		f"✅ Записано: {diaper_type} ({user})",
+		reply_markup=keyboards.main_menu()
+	)
 
 @dp.message(F.text.endswith("мл"))
 async def process_feeding(message: types.Message):
@@ -89,26 +104,26 @@ async def process_sleep(message: types.Message):
 
 @dp.message(F.text == "📊 Звіт")
 async def show_report(message: types.Message):
-    feed_data = database.get_feeding_report_by_days(days=3)
-    sleep_data = dict(database.get_sleep_report_by_days(days=3))
-    
-    report_lines = ["📊 **Звіт за останні дні**\n"]
-    
-    all_dates = sorted(set([d for d, _ in feed_data] + list(sleep_data.keys())), reverse=True)[:3]
+	feed_data = database.get_feeding_report_by_days(days=3)
+	sleep_data = dict(database.get_sleep_report_by_days(days=3))
+	
+	report_lines = ["📊 **Звіт за останні дні**\n"]
+	
+	all_dates = sorted(set([d for d, _ in feed_data] + list(sleep_data.keys())), reverse=True)[:3]
 
-    for date in all_dates:
-        volume = next((v for d, v in feed_data if d == date), 0)
-        
-        total_min = sleep_data.get(date, 0)
-        h = int(total_min // 60)
-        m = int(total_min % 60)
-        
-        report_lines.append(f"🗓 **{date}**")
-        report_lines.append(f"🍼 Їжа: {volume} мл")
-        report_lines.append(f"😴 Сон: {h} год {m} хв")
-        report_lines.append("---")
+	for date in all_dates:
+		volume = next((v for d, v in feed_data if d == date), 0)
+		
+		total_min = sleep_data.get(date, 0)
+		h = int(total_min // 60)
+		m = int(total_min % 60)
+		
+		report_lines.append(f"🗓 **{date}**")
+		report_lines.append(f"🍼 Їжа: {volume} мл")
+		report_lines.append(f"😴 Сон: {h} год {m} хв")
+		report_lines.append("---")
 
-    await message.answer("\n".join(report_lines), parse_mode="Markdown")
+	await message.answer("\n".join(report_lines), parse_mode="Markdown")
 
 async def main():
 	database.init_db()

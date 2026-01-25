@@ -33,6 +33,16 @@ def init_db():
 			)
 		''')
 
+		# Table from diapers
+		cursor.execute('''
+			CREATE TABLE IF NOT EXISTS diapers(
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				user TEXT,
+				type TEXT,
+				timestamp TEXT
+			)
+		''')
+
 		conn.commit()
 		logging.info("База даних успішно ініціалізована")
 
@@ -68,6 +78,7 @@ def get_active_sleep():
 		cursor.execute('SELECT id, start_time, user_name FROM sleep WHERE end_time IS NULL LIMIT 1')
 		return cursor.fetchone()
 
+
 def start_sleep(user_name):
 	now = datetime.now().strftime(TIME_FORMAT)
 	with get_connection() as conn:
@@ -76,6 +87,7 @@ def start_sleep(user_name):
 			'INSERT INTO sleep (user_name, start_time) VALUES (?, ?)', (user_name, now)
 		)
 		conn.commit()
+
 
 def finish_sleep ():
 	now = datetime.now().strftime(TIME_FORMAT)
@@ -91,6 +103,7 @@ def finish_sleep ():
 			return active_sleep
 		return None
 
+
 def finish_sleep_auto (minutes_ago=10):
 	wake_time = (datetime.now() - timedelta(minutes=minutes_ago)).strftime(TIME_FORMAT)
 	with get_connection() as conn:
@@ -105,6 +118,7 @@ def finish_sleep_auto (minutes_ago=10):
 			conn.commit()
 			return active_sleep
 		return None
+
 
 def get_sleep_report_by_days(days=3):
 	with get_connection() as conn:
@@ -131,6 +145,17 @@ def get_sleep_report_by_days(days=3):
 
 	sorted_days = sorted(daily_sleep.items(), reverse=True)[:days]
 	return sorted_days
+
+
+def add_diaper(user, diaper_type):
+	timestamp = datetime.now().strftime(TIME_FORMAT)
+	with get_connection() as conn:
+		cursor = conn.cursor()
+		cursor.execute(
+			'INSERT INTO diapers (user, type, timestamp) VALUES (?, ?, ?)',
+			(user, diaper_type, timestamp)
+		)
+		conn.commit()
 
 
 def get_feeding_report_by_days(days=3):

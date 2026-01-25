@@ -5,6 +5,7 @@ def main_menu () -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
 	builder.button(text="🍼 Годування")
 	builder.button(text="😴 Сон")
+	builder.button(text="🧷 Підгузок")
 	builder.button(text="📊 Звіт")
 
 	builder.adjust(2)
@@ -19,4 +20,16 @@ def feeding_levels () -> ReplyKeyboardMarkup:
 	builder.button(text=f"{"Відмінити"}")
 		
 	builder.adjust(3)
+	return builder.as_markup(resize_keyboard=True)
+
+def diaper_menu () -> ReplyKeyboardMarkup:
+	builder = ReplyKeyboardBuilder()
+
+	builder.button(text="💦 По-малому")
+	builder.button(text="💩 По-великому")
+	builder.button(text="🤮 Зригнув")
+	builder.button(text="🌟 Все разом")
+	builder.button(text="Відмінити")
+
+	builder.adjust(2)
 	return builder.as_markup(resize_keyboard=True)
