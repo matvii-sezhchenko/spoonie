@@ -17,7 +17,7 @@ def feeding_levels () -> ReplyKeyboardMarkup:
 	for ml in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 150, 180, 210]:
 		builder.button(text=f"{ml} мл")
 
-	builder.button(text=f"{"Відмінити"}")
+	builder.button(text=f"Відмінити")
 		
 	builder.adjust(3)
 	return builder.as_markup(resize_keyboard=True)
