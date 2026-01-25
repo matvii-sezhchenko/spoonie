@@ -1,6 +1,6 @@
 import sqlite3
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 TIME_FORMAT = "%d.%m %H:%M"
 
@@ -91,8 +91,8 @@ def finish_sleep ():
 			return active_sleep
 		return None
 
-def finish_sleep_auto ():
-	wake_time = (datetime.now() - timedelta(minutes=minutes_ago)).star_time(TIME_FORMAT)
+def finish_sleep_auto (minutes_ago=10):
+	wake_time = (datetime.now() - timedelta(minutes=minutes_ago)).strftime(TIME_FORMAT)
 	with get_connection() as conn:
 		cursor = conn.cursor()
 
