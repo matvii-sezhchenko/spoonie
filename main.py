@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 
@@ -10,9 +11,12 @@ import tokenTelegram
 import database
 import keyboards
 
+session = AiohttpSession(proxy="http://proxy.server:3128")
+
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=tokenTelegram.API_TOKEN)
+bot = Bot(token=tokenTelegram.API_TOKEN, session=session)
+# bot = Bot(token=tokenTelegram.API_TOKEN)
 dp = Dispatcher()
 
 @dp.message(Command("start"))
