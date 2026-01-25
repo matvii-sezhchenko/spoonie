@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from datetime import datetime
 
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -11,12 +12,14 @@ import tokenTelegram
 import database
 import keyboards
 
-session = AiohttpSession(proxy="http://proxy.server:3128")
-
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=tokenTelegram.API_TOKEN, session=session)
-# bot = Bot(token=tokenTelegram.API_TOKEN)
+if os.path.exists('/home/MattiasMelton'): # Шлях вашої папки на сервері
+    session = AiohttpSession(proxy="http://proxy.server:3128")
+    bot = Bot(token=tokenTelegram.API_TOKEN, session=session)
+else:
+    bot = Bot(token=tokenTelegram.API_TOKEN)
+
 dp = Dispatcher()
 
 @dp.message(Command("start"))
