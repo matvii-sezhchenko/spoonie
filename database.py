@@ -20,7 +20,7 @@ def init_db():
 				user_name TEXT,
 				volume_ml INTEGER,
 				timestamp TEXT
-			)	
+			)   
 		''')
 
 		# Table from sleeping
@@ -105,6 +105,32 @@ def finish_sleep_auto (minutes_ago=10):
 			conn.commit()
 			return active_sleep
 		return None
+
+def get_sleep_report_by_days(days=3):
+	with get_connection() as conn:
+		cursor = conn.cursor()
+
+		cursor.execute('SELECT start_time, end_time FROM sleep WHERE end_time IS NOT NULL')
+		rows = cursor.fetchall()
+
+		daily_sleep = {}
+		fmt = "%d.%m %H:%M"
+
+		for start_str, end_str in rows:
+			try:
+				start_dt = datetime.strftime(start_str, fmt)
+				end_dt = datetime.strftime(end_str, fmt)
+
+				day_key = start_dt.startime("%d.%m.%Y")
+
+				duration = (end_dt - start_dt).total_seconds() / 60
+
+				daily_sleep[day_key] = daily_sleep.get(day_key, 0) + duration
+			except:
+				continue
+
+	sorted_days = sorted(daily_sleep.items(), reverse=True)[:days]
+	return sorted_days
 
 
 def get_feeding_report(days=3):

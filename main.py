@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -66,23 +67,36 @@ async def process_sleep(message: types.Message):
 		database.finish_sleep()
 		await message.answer(
 			f"☀️ Малюк прокинувся!\n\n"
-            f"Заснув о: {start_time} (відмітив {start_user})\n"
-            f"Прокинувся о: {datetime.now().strftime('%H:%M')} (відмітив {user})"
+			f"Заснув о: {start_time} (відмітив {start_user})\n"
+			f"Прокинувся о: {datetime.now().strftime('%H:%M')} (відмітив {user})"
 		)
 
 
 @dp.message(F.text.endswith("📊 Звіт"))
 async def show_report(message: types.Message):
 	total_volume = database.get_feeding_report(days=3)
+	daily_sleep_data = database.get_sleep_report_by_days(days=3)
+
+	sleep_text = ""
+
+	if daily_sleep_data:
+		for day, total_min in daily_sleep_data:
+			h = int(total_min // 60)
+			m = int(total_min % 60)
+			sleep_text += f"🔹 {day} — **{h} год. {m} хв.**\n"
+	else:
+		sleep_text = "Даних про сон ще немає."
 
 	if total_volume > 0:
 		response_text = (
 			f"📊 **Звіт за останні 3 дні**\n\n"
-            f"Загальна кількість суміші: **{total_volume} мл**\n"
-            f"Це приблизно {round(total_volume / 1000, 2)} л. 🍼"
+			f"Загальна кількість суміші: **{total_volume} мл**\n"
+			f"Це приблизно {round(total_volume / 1000, 2)} \n\n"
+			f"😴 **Сон по днях:**\n"
+			f"{sleep_text}"
 		)
 	else:
-		response_text = "За останні	3 дні записів про годування не знайдено"
+		response_text = "За останні 3s дні записів про годування не знайдено"
 
 	await message.answer(response_text, parse_mode="Markdown")
 
@@ -92,4 +106,4 @@ async def main():
 	await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+	asyncio.run(main())
