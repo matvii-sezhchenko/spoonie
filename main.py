@@ -23,9 +23,9 @@ logging.basicConfig(level=logging.INFO)
 
 if os.path.exists('/home/MattiasMelton'): # Шлях вашої папки на сервері
 	session = AiohttpSession(proxy="http://proxy.server:3128")
-	bot = Bot(token=tokenTelegram.API_TOKEN, session=session)
+	bot = Bot(token=tokenTelegram.API_TOKEN_BABY_TRACKER, session=session)
 else:
-	bot = Bot(token=tokenTelegram.API_TOKEN)
+	bot = Bot(token=tokenTelegram.API_TOKEN_TEST)
 
 dp = Dispatcher()
 
