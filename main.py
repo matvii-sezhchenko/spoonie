@@ -20,6 +20,8 @@ import keyboards
 
 logging.basicConfig(level=logging.INFO)
 
+DB_TIME_FORMAT = "%Y-%m-%d %H:%M"
+
 
 bot = Bot(token=tokenTelegram.API_TOKEN_BABY_TRACKER)
 
@@ -77,7 +79,7 @@ async def process_feeding(message: types.Message):
 		sleep_info = ""
 
 		if active_sleep:
-			database.finish_sleep_auto(minutes_ago=10)
+			database.finish_sleep()
 			sleep_info = f"\n\nℹ️ Автоматично закрито сон (10 хв тому)."
 			await message.answer(sleep_info)
 
@@ -92,7 +94,6 @@ async def process_feeding(message: types.Message):
 @dp.message(F.text == "Відмінити")
 async def cancel_action(message: types.Message):
 	await message.answer(
-		"Дію скасовано, повернення в основне меню.",
 		reply_markup=keyboards.main_menu()
 	)
 
@@ -118,45 +119,52 @@ async def process_sleep(message: types.Message):
 async def show_report_menu(message: types.Message):
 	await message.answer("Оберіть тип звіту:", reply_markup=keyboards.report_menu())
 
+def calculate_average_interval(all_times, DB_TIME_FORMAT):
+	for i in range(len(all_times)-1):
+		try:
+			t1 = datetime.strptime(all_times[i], DB_TIME_FORMAT)
+			t2 = datetime.strptime(all_times[i+1], DB_TIME_FORMAT)
+			diff = ads((t1 - t2).total_seconds() / 60)
+
+			if 30 < diff < 600:
+				intervals.append(diff)
+		except (ValueError, TypeError):
+			continue
+
+	if not intervals:
+		return 0
+	return sum(intervals) / len(intervals)
+
 @dp.message(F.text == "📋 Стандартний (3 дні)")
 async def standard_report(message: types.Message):
-	feeds, diapers, sleep, all_times = database.get_full_report_data(days=3)
-	
-	intervals = []
-	fmt = "%d.%m %H:%M"
-	for i in range(len(all_times)-1):
-		t1, t2 = datetime.strptime(all_times[i], fmt), datetime.strptime(all_times[i+1], fmt)
-		diff = abs((t1 - t2).total_seconds() / 60)
-		if diff < 600: intervals.append(diff)
-	
-	avg_int_total = sum(intervals)/len(intervals) if intervals else 0
-	avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
+    feeds, diapers, sleep, all_times = database.get_full_report_data(days=3)
+    avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
+    avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
+    lines = [f"⏱ Середній інтервал годування: **{avg_h:02d}:{avg_m:02d}**\n"]
 
-	avg_diapers = sum(diapers.values()) / len(diapers) if diapers else 0
-	
-	avg_sleep = sum(sleep.values()) / len(sleep) if sleep else 0
 
-	lines = [
-		f"⏱ Середній інтервал годування: **{avg_h:02d}:{avg_m:02d}**",
-		f"🧷 Середня зміна підгузків на добу: **{int(avg_diapers)}**",
-		f"😴 Загальна кількість сну: **{int(avg_sleep)} годин**\n"
-	]
+    all_dates = sorted(set(list(feeds.keys()) + list(diapers.keys()) + list(sleep.keys())), reverse=True)
 
-	all_dates = sorted(set(list(feeds.keys()) + list(diapers.keys()) + list(sleep.keys())), reverse=True)[:3]
-	current_year = datetime.now().year
+    if not all_dates:
+    	await message.answer("Статистика поки порожня. Додайте перші дані!", reply_markup=keyboards.main_menu())
+    	return
 
-	for date in all_dates:
-		f_count, f_vol = feeds.get(date, (0, 0))
-		d_count = diapers.get(date, 0)
-		s_hours = int(sleep.get(date, 0))
-		
-		lines.append(f"🗓 **{date}.{current_year}:**")
-		lines.append(f"Кількість прийомів їжі: {f_count}, спожитий об'єм {f_vol} мл")
-		lines.append(f"Витрата підгузків: {d_count} шт")
-		lines.append(f"Сон: {s_hours} годин\n")
+	for date_str in all_dates:
+		f_count, f_vol = feeds.get(date_str, (0, 0))
+		d_count = diapers.get(date_str, 0)
+		s_hours = sleep.get(date_str, 0)
 
-	await message.answer("\n".join(lines), parse_mode="Markdown")
+		try:
+			display_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m")
+		except ValueError:
+			display_date = date_str
 
+		lines.append(f"🗓 **{display_date}:**")
+		lines.append(f"🍼 Годувань: {f_count} (всього {f_vol} мл)")
+		lines.append(f"🧷 Підгузків: {d_count} шт")
+		lines.append(f"😴 Сон: {s_hours:.1f} годин\n")
+
+	await message.answer("\n".join(lines), parse_mode="Markdown", reply_markup=keyboards.main_menu())
 
 async def main():
 	database.init_db()
