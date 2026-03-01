@@ -5,7 +5,7 @@ BTN_CANCEL = "🚫 Відмінити"
 # Main menu:
 BTN_FEEDING = "🍼 Годування"
 BTN_SLEEP = "😴 Сон"
-BTN_DEFICATIONS = "🧷 Випорожнення"
+BTN_DEFECATIONS = "🧷 Випорожнення"
 BTN_METRIC = "🎖 Метріки"
 BTN_REPORTS = "📊 Звіти"
 

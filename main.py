@@ -57,7 +57,7 @@ async def show_feeding_menu (message: types.Message):
 		parse_mode="Markdown"
 	)
 
-@dp.message(F.text == btn.BTN_DEFICATIONS)
+@dp.message(F.text == btn.BTN_DEFECATIONS)
 async def show_diaper_menu(message: types.Message):
 	await message.answer("Що саме зачудив?", reply_markup=keyboards.diaper_menu())
 
