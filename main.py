@@ -175,6 +175,20 @@ async def standard_report(message: types.Message):
 
 	await message.answer("\n".join(lines), parse_mode="Markdown", reply_markup=keyboards.main_menu())
 
+@dp.message(F.text == "📅 Місячний звіт (30 днів)")
+async def monthly_report(message: types.Message):
+	sum_ml, count_diapers, avg_sleep = database.get_monthly_report_data(30)
+	text = (
+		f"📊 **Аналітика за місяць**\n"
+		f"━━━━━━━━━━━━━━━\n"
+		f"🍼 З'їдено всього: **{sum_ml} л**\n"
+		f"🧷 Підгузків: **{count_diapers} шт**\n"
+		f"😴 Сон (сер. за добу): **{avg_sleep} год**\n"
+		f"━━━━━━━━━━━━━━━"
+	)
+
+	await message.answer(text, parse_mode="Markdown", reply_markup=keyboards.main_menu())
+
 async def main():
 	database.init_db()
 	print("Бот запущений")

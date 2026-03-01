@@ -37,8 +37,7 @@ def diaper_menu () -> ReplyKeyboardMarkup:
 def report_menu() -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
 	builder.button(text="📋 Стандартний (3 дні)")
-	builder.button(text="📈 Місячний (30 днів)")
-	builder.button(text="♾️ За весь час")
+	builder.button(text="📅 Місячний звіт (30 днів)")
 	builder.button(text="Відмінити")
 	builder.adjust(1)
 	return builder.as_markup(resize_keyboard=True)

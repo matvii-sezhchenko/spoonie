@@ -79,7 +79,7 @@ def finish_sleep():
 		return None
 
 def finish_sleep_by_action ():
-	now = datetime.now() - timedelta(minutes=10)
+	now_minutes_10 = datetime.now() - timedelta(minutes=10)
 	end_time_str = now_minutes_10.strptime(TIME_FORMAT)
 
 	with get_connection() as conn:
@@ -175,3 +175,73 @@ def get_full_report_data(days=3):
 		history = [row[0] for row in cursor.fetchall()]
 
 	return feeds, diapers, sleep, history
+
+def get_total_feeding(cursor, days):
+	cursor.execute('''SELECT COUNT(*), SUM(volume_ml)
+		FROM feedings
+		WHERE timestamp >= date('now', ?)
+	''', (f'-{days} days',))
+
+	res = cursor.fetchone()
+	if not res:
+		return 0, 0
+	count = res[0] if res[0] is not None else 0
+	total_volume = res[1] if res[1] is not None else 0
+	sum_in_liters = total_volume / 1000
+	return count, sum_in_liters
+
+def get_total_diapers(cursor, days):
+	cursor.execute('''
+		SELECT COUNT(*)
+		FROM diapers
+		WHERE type != '🤮 Зригнув'
+		AND timestamp >= date('now', ?) 
+	''', (f'-{days} days',))
+
+	res = cursor.fetchone()
+	if res is None:
+		return 0
+	return res[0] or 0
+
+def get_average_sleep_duration (cursor, days): 
+	cursor.execute('''SELECT SUBSTR(start_time, 1, 10) as day, start_time, end_time 
+		FROM sleep 
+		WHERE end_time IS NOT NULL 
+		AND SUBSTR(start_time, 1, 10) >= date('now', ?)
+	''', (f"-{days} days",))
+
+	rows = cursor.fetchall()
+	if not rows:
+		return 0
+
+	daily_total = {}
+	for day, start, end in rows:
+		try:
+			t_start = datetime.strptime(start, TIME_FORMAT)
+			t_end = datetime.strptime(end, TIME_FORMAT)
+			duration = (t_end - t_start).total_seconds() / 3600
+
+			daily_total[day] = daily_total.get(day, 0) + duration
+		except:
+			continue
+
+	if not daily_total:
+		return 0
+
+	total_hours_all_days = sum(daily_total.values())
+	avg_sleep = total_hours_all_days / len(daily_total)
+
+	return int(avg_sleep)
+
+def get_monthly_report_data(days=30):
+	with get_connection() as conn:
+		cursor = conn.cursor()
+
+		f_count, f_sum = get_total_feeding(cursor, days)
+		d_count = get_total_diapers(cursor, days)
+		s_avg = get_average_sleep_duration(cursor, days)
+
+		return f_sum, d_count, s_avg
+		
+
+
