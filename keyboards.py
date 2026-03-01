@@ -5,7 +5,7 @@ def main_menu () -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
 	builder.button(text="🍼 Годування")
 	builder.button(text="😴 Сон")
-	builder.button(text="🧷 Підгузок")
+	builder.button(text="🧷 Випорожнення")
 	builder.button(text="📊 Звіт")
 
 	builder.adjust(2)

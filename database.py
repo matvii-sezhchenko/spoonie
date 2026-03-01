@@ -78,6 +78,23 @@ def finish_sleep():
 			return active_sleep
 		return None
 
+def finish_sleep_by_action ():
+	now = datetime.now() - timedelta(minutes=10)
+	end_time_str = now_minutes_10.strptime(TIME_FORMAT)
+
+	with get_connection() as conn:
+		cursor = conn.cursor()
+		active_sleep = get_active_sleep()
+		
+		if active_sleep:
+			sleep_id = active_sleep[0]
+			cursor.execute(
+				'UPDATE sleep SET end_time = ? WHERE id = ?', (end_time_str, sleep_id)
+			)
+			conn.commit()
+			return active_sleep
+		return None
+
 def add_diaper(user, diaper_type):
 	timestamp = datetime.now().strftime(TIME_FORMAT)
 	with get_connection() as conn:
@@ -107,7 +124,7 @@ def get_feeding_stats(cursor, days):
 		GROUP BY day
 		ORDER BY day DESC
 		LIMIT ?
-	''', (days,))
+	''', (days+1,))
 	return {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
 
 def get_diaper_stats(cursor, days):
@@ -118,26 +135,30 @@ def get_diaper_stats(cursor, days):
 		GROUP BY day
 		ORDER BY day DESC
 		LIMIT ?    
-	''', (days,))
+	''', (days+1,))
 	return {row[0]: row[1] for row in cursor.fetchall()}
 
 def get_sleep_stats (cursor, days, TIME_FORMAT):
-	cursor.execute('''
-		SELECT SUBSTR(start_time, 1, 10) as day, start_time, end_time
-		FROM sleep
-		WHERE end_time IS NOT NULL AND start_time >= date('now', ?)
-	''', (f' -{days} days',))
+	querySQL = "SELECT SUBSTR(start_time, 1, 10) as day, start_time, end_time FROM sleep WHERE end_time IS NOT NULL AND SUBSTR(start_time, 1, 10) >= date('now', ?)"
+	cursor.execute(querySQL, (f"-{days} days",))
 
 	rows = cursor.fetchall()
 	stats = {}
+
 	for row in rows: 
-		day, start, end = rows
+		day, start, end = row
 		try:
-			duration = (datetime.strptime(end, TIME_FORMAT) -
-				datetime.strptime(start, TIME_FORMAT)).total_seconds() / 3600
-			stats[day] = stats.get(day, 0) + duration
-		except (ValueError, TypeError):
+			t_start = datetime.strptime(start, TIME_FORMAT)
+			t_end = datetime.strptime(end, TIME_FORMAT)
+
+			duration = (t_end - t_start).total_seconds() / 3600
+
+			if duration > 0:
+				stats[day] = stats.get(day, 0) + duration
+		except Exception as e:
+			logging.error(f"Помилка розрахунку сну: {e}")
 			continue
+
 	return stats
 
 

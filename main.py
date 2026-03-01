@@ -51,7 +51,7 @@ async def show_feeding_menu (message: types.Message):
 		parse_mode="Markdown"
 	)
 
-@dp.message(F.text == "🧷 Підгузок")
+@dp.message(F.text == "🧷 Випорожнення")
 async def show_diaper_menu(message: types.Message):
 	await message.answer("Що саме зачудив?", reply_markup=keyboards.diaper_menu())
 
@@ -59,6 +59,7 @@ async def show_diaper_menu(message: types.Message):
 async def process_diaper(message: types.Message):
 	user = message.from_user.first_name
 	diaper_type = message.text
+	await close_active_sleep_if_exists(message)
 	
 	database.add_diaper(user, diaper_type)
 	
@@ -67,22 +68,28 @@ async def process_diaper(message: types.Message):
 		reply_markup=keyboards.main_menu()
 	)
 
+async def close_active_sleep_if_exists (message: types.Message):
+	active_sleep = database.get_active_sleep()
+
+		if active_sleep:
+			database.finish_sleep_by_action()
+
+			start_id, start_time, start_user = active_sleep
+			text = (
+				f"ℹ️ **Автоматично закрито сон**\n"
+				f"Малюк заснув о {start_time} (відмітив {start_user}).\n")
+			await message.answer(text, parse_mode="Markdown")
+
 @dp.message(F.text.endswith("мл"))
 async def process_feeding(message: types.Message):
 	user = message.from_user.first_name
 
 	try:
-		volume  = int (message.text.split()[0])
+		volume = int (message.text.split()[0])
 		database.add_feeding(user, volume)
 
-		active_sleep = database.get_active_sleep()
-		sleep_info = ""
-
-		if active_sleep:
-			database.finish_sleep()
-			sleep_info = f"\n\nℹ️ Автоматично закрито сон (10 хв тому)."
-			await message.answer(sleep_info)
-
+		await close_active_sleep_if_exists(message)
+		
 		await message.answer(
 			f"✅ Записано: {volume} мл ({user})",
 			reply_markup=keyboards.main_menu()
@@ -138,7 +145,7 @@ def calculate_average_interval(all_times, DB_TIME_FORMAT):
 
 @dp.message(F.text == "📋 Стандартний (3 дні)")
 async def standard_report(message: types.Message):
-	feeds, diapers, sleep, all_times = database.get_full_report_data(days=3)
+	feeds, diapers, sleep, all_times = database.get_full_report_data(days=2)
 	avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
 	avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
 	lines = [f"⏱ Середній інтервал годування: **{avg_h:02d}:{avg_m:02d}**\n"]
