@@ -59,7 +59,7 @@ def finish_sleep():
 
 def finish_sleep_by_action ():
 	now_minutes_10 = datetime.now() - timedelta(minutes=10)
-	end_time_str = now_minutes_10.strptime(TIME_FORMAT)
+	end_time_str = now_minutes_10.strftime(TIME_FORMAT)
 
 	with get_connection() as conn:
 		cursor = conn.cursor()
