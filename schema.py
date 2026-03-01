@@ -27,5 +27,12 @@ TABLES = {
 			user_name TEXT,
 			weight_gram INTEGER,
 			date_fixation TEXT)
+	''',
+	'growth':'''
+		CREATE TABLE IF NOT EXISTS growth(
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_name TEXT,
+			growth_cm INTEGER,
+			date_fixation TEXT)
 	'''
 }

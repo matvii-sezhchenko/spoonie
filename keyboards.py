@@ -6,7 +6,7 @@ def main_menu () -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
 	builder.button(text=btn.BTN_FEEDING)
 	builder.button(text=btn.BTN_SLEEP)
-	builder.button(text=btn.BTN_DEFICATIONS)
+	builder.button(text=btn.BTN_DEFECATIONS)
 	builder.button(text=btn.BTN_METRIC)
 	builder.button(text=btn.BTN_REPORTS)
 

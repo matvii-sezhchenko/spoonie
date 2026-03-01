@@ -12,6 +12,7 @@ from datetime import datetime
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 
 # Custom modules
 import tokenTelegram
@@ -21,8 +22,11 @@ import config_buttons as btn
 
 #Classes
 from services.weight_service import WeightService
+from services.growth_service import GrowthService
+from states import BabyStats
 
 weight_service = WeightService()
+growth_service = GrowthService()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -187,6 +191,7 @@ async def standard_report(message: types.Message):
 async def monthly_report(message: types.Message):
 	sum_ml, count_diapers, avg_sleep = database.get_monthly_report_data(30)
 	weight_data = weight_service.get_monthly_analytics()
+	growth_data = growth_service.get_monthly_analytics()
 	text = (
 		f"📊 **Аналітика за місяць**\n"
 		f"━━━━━━━━━━━━━━━\n"
@@ -195,6 +200,7 @@ async def monthly_report(message: types.Message):
 		f"😴 Сон (сер. за добу): **{avg_sleep} год**\n"
 		f"━━━━━━━━━━━━━━━\n"
 		f"{weight_data}"
+		f"{growth_data}"
 	)
 
 	await message.answer(
@@ -211,15 +217,16 @@ async def metric_menu(message: types.Message):
 
 # *******************************Baby weight******************************
 @dp.message(F.text == btn.BTN_WEIGHT)
-async def weight_menu(message: types.Message):
+async def weight_menu(message: types.Message, state: FSMContext):
 	response = "Введіть вагу малюка в грамах:"
 	await message.answer(
 		response,
 		parse_mode="Markdown"
 	)
+	await state.set_state(BabyStats.waiting_for_weight)
 
-@dp.message(lambda m: m.text.isdigit())
-async def handle_weight_input(message: types.Message):
+@dp.message(BabyStats.waiting_for_weight)
+async def handle_weight_input(message: types.Message, state: FSMContext):
 	result_text = weight_service.add_new_weight(
 		message.from_user.full_name,
 		message.text
@@ -230,28 +237,31 @@ async def handle_weight_input(message: types.Message):
 		parse_mode="Markdown",
 		reply_markup=keyboards.main_menu()
 	)
+	await state.clear()
 
 # *******************************Baby growth******************************
 @dp.message(F.text == btn.BTN_GROWTH)
-async def growth_menu(message: types.Message):
+async def growth_menu(message: types.Message, state: FSMContext):
 	response = "Введіть зріст малюка в сантиметрах:"
 	await message.answer(
 		response,
 		parse_mode="Markdown"
 	)
+	await state.set_state(BabyStats.waiting_for_growth)
 
-@dp.message(lambda m: m.text.isdigit())
-async def handle_growth_input(message: types.Message):
-	# result_text = weight_service.add_new_weight(
-	# 	message.from_user.full_name,
-	# 	message.text
-	# )
+@dp.message(BabyStats.waiting_for_growth)
+async def handle_growth_input(message: types.Message, state: FSMContext):
+	result_text = growth_service.add_new_growth(
+		message.from_user.full_name,
+		message.text
+	)
 
 	await message.answer(
 		result_text,
 		parse_mode="Markdown",
 		reply_markup=keyboards.main_menu()
 	)
+	await state.clear()
 
 async def main():
 	database.init_db()
