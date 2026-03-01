@@ -120,11 +120,12 @@ async def show_report_menu(message: types.Message):
 	await message.answer("Оберіть тип звіту:", reply_markup=keyboards.report_menu())
 
 def calculate_average_interval(all_times, DB_TIME_FORMAT):
+	intervals = []
 	for i in range(len(all_times)-1):
 		try:
 			t1 = datetime.strptime(all_times[i], DB_TIME_FORMAT)
 			t2 = datetime.strptime(all_times[i+1], DB_TIME_FORMAT)
-			diff = ads((t1 - t2).total_seconds() / 60)
+			diff = abs((t1 - t2).total_seconds() / 60)
 
 			if 30 < diff < 600:
 				intervals.append(diff)
@@ -137,17 +138,17 @@ def calculate_average_interval(all_times, DB_TIME_FORMAT):
 
 @dp.message(F.text == "📋 Стандартний (3 дні)")
 async def standard_report(message: types.Message):
-    feeds, diapers, sleep, all_times = database.get_full_report_data(days=3)
-    avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
-    avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
-    lines = [f"⏱ Середній інтервал годування: **{avg_h:02d}:{avg_m:02d}**\n"]
+	feeds, diapers, sleep, all_times = database.get_full_report_data(days=3)
+	avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
+	avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
+	lines = [f"⏱ Середній інтервал годування: **{avg_h:02d}:{avg_m:02d}**\n"]
 
 
-    all_dates = sorted(set(list(feeds.keys()) + list(diapers.keys()) + list(sleep.keys())), reverse=True)
+	all_dates = sorted(set(list(feeds.keys()) + list(diapers.keys()) + list(sleep.keys())), reverse=True)
 
-    if not all_dates:
-    	await message.answer("Статистика поки порожня. Додайте перші дані!", reply_markup=keyboards.main_menu())
-    	return
+	if not all_dates:
+		await message.answer("Статистика поки порожня. Додайте перші дані!", reply_markup=keyboards.main_menu())
+		return
 
 	for date_str in all_dates:
 		f_count, f_vol = feeds.get(date_str, (0, 0))
