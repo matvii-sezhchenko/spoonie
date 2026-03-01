@@ -71,14 +71,14 @@ async def process_diaper(message: types.Message):
 async def close_active_sleep_if_exists (message: types.Message):
 	active_sleep = database.get_active_sleep()
 
-		if active_sleep:
-			database.finish_sleep_by_action()
+	if active_sleep:
+		database.finish_sleep_by_action()
 
-			start_id, start_time, start_user = active_sleep
-			text = (
-				f"ℹ️ **Автоматично закрито сон**\n"
-				f"Малюк заснув о {start_time} (відмітив {start_user}).\n")
-			await message.answer(text, parse_mode="Markdown")
+		start_id, start_time, start_user = active_sleep
+		text = (
+			f"ℹ️ **Автоматично закрито сон**\n"
+			f"Малюк заснув о {start_time} (відмітив {start_user}).\n")
+		await message.answer(text, parse_mode="Markdown")
 
 @dp.message(F.text.endswith("мл"))
 async def process_feeding(message: types.Message):
@@ -101,6 +101,7 @@ async def process_feeding(message: types.Message):
 @dp.message(F.text == "Відмінити")
 async def cancel_action(message: types.Message):
 	await message.answer(
+		"Повернено в головне меню",
 		reply_markup=keyboards.main_menu()
 	)
 
