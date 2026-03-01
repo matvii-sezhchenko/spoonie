@@ -17,6 +17,7 @@ from aiogram.filters import Command
 import tokenTelegram
 import database
 import keyboards
+import config_buttons as btn
 
 #Classes
 from services.weight_service import WeightService
@@ -39,7 +40,7 @@ async def cmd_start(message: types.Message):
 		reply_markup=keyboards.main_menu()
 	)
 
-@dp.message(F.text == "🍼 Годування")
+@dp.message(F.text == btn.BTN_FEEDING)
 async def show_feeding_menu (message: types.Message):
 	last_feed = database.get_last_feeding()
 	
@@ -56,11 +57,11 @@ async def show_feeding_menu (message: types.Message):
 		parse_mode="Markdown"
 	)
 
-@dp.message(F.text == "🧷 Випорожнення")
+@dp.message(F.text == btn.BTN_DEFICATIONS)
 async def show_diaper_menu(message: types.Message):
 	await message.answer("Що саме зачудив?", reply_markup=keyboards.diaper_menu())
 
-@dp.message(F.text.in_(["💦 По-малому", "💩 По-великому", "🌟 Все разом", "🤮 Зригнув"]))
+@dp.message(F.text.in_([btn.BTN_PEEPEE, btn.BTN_POOPOO, btn.BTN_ALL_DIAPER, btn.BTN_BURPED]))
 async def process_diaper(message: types.Message):
 	user = message.from_user.first_name
 	diaper_type = message.text
@@ -103,14 +104,14 @@ async def process_feeding(message: types.Message):
 		logging.error(f"Помилка при записі годування {e}")
 		await message.answer("Ой, щось пішло не за планом")
 
-@dp.message(F.text == "Відмінити")
+@dp.message(F.text == btn.BTN_CANCEL)
 async def cancel_action(message: types.Message):
 	await message.answer(
 		"Повернено в головне меню",
 		reply_markup=keyboards.main_menu()
 	)
 
-@dp.message(F.text.endswith("😴 Сон"))
+@dp.message(F.text == btn.BTN_SLEEP)
 async def process_sleep(message: types.Message):
 	user = message.from_user.first_name
 	active_sleep = database.get_active_sleep()
@@ -128,7 +129,7 @@ async def process_sleep(message: types.Message):
 		)
 
 
-@dp.message(F.text == "📊 Звіт")
+@dp.message(F.text == btn.BTN_REPORTS)
 async def show_report_menu(message: types.Message):
 	await message.answer("Оберіть тип звіту:", reply_markup=keyboards.report_menu())
 
@@ -150,7 +151,7 @@ def calculate_average_interval(all_times, DB_TIME_FORMAT):
 	return sum(intervals) / len(intervals)
 
 # **********************************Short raport*****************************
-@dp.message(F.text == "📋 Стандартний (3 дні)")
+@dp.message(F.text == btn.BTN_FROM_THREE_DAYS)
 async def standard_report(message: types.Message):
 	feeds, diapers, sleep, all_times = database.get_full_report_data(days=2)
 	avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
@@ -182,7 +183,7 @@ async def standard_report(message: types.Message):
 	await message.answer("\n".join(lines), parse_mode="Markdown", reply_markup=keyboards.main_menu())
 
 # *******************************Monthly raport******************************
-@dp.message(F.text == "📅 Місячний звіт (30 днів)")
+@dp.message(F.text == btn.BTN_FROM_MONTH)
 async def monthly_report(message: types.Message):
 	sum_ml, count_diapers, avg_sleep = database.get_monthly_report_data(30)
 	weight_data = weight_service.get_monthly_analytics()
@@ -202,8 +203,14 @@ async def monthly_report(message: types.Message):
 		reply_markup=keyboards.main_menu()
 	)
 
-# *******************************Weight******************************
-@dp.message(F.text == "⚖️ Вага")
+# *******************************Metrics******************************
+@dp.message(F.text == btn.BTN_METRIC)
+async def metric_menu(message: types.Message):
+	await message.answer("Що заміряємо:", reply_markup=keyboards.metric_menu())
+
+
+# *******************************Baby weight******************************
+@dp.message(F.text == btn.BTN_WEIGHT)
 async def weight_menu(message: types.Message):
 	response = "Введіть вагу малюка в грамах:"
 	await message.answer(
@@ -224,6 +231,27 @@ async def handle_weight_input(message: types.Message):
 		reply_markup=keyboards.main_menu()
 	)
 
+# *******************************Baby growth******************************
+@dp.message(F.text == btn.BTN_GROWTH)
+async def growth_menu(message: types.Message):
+	response = "Введіть зріст малюка в сантиметрах:"
+	await message.answer(
+		response,
+		parse_mode="Markdown"
+	)
+
+@dp.message(lambda m: m.text.isdigit())
+async def handle_growth_input(message: types.Message):
+	# result_text = weight_service.add_new_weight(
+	# 	message.from_user.full_name,
+	# 	message.text
+	# )
+
+	await message.answer(
+		result_text,
+		parse_mode="Markdown",
+		reply_markup=keyboards.main_menu()
+	)
 
 async def main():
 	database.init_db()
