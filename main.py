@@ -18,6 +18,11 @@ import tokenTelegram
 import database
 import keyboards
 
+#Classes
+from services.weight_service import WeightService
+
+weight_service = WeightService()
+
 logging.basicConfig(level=logging.INFO)
 
 DB_TIME_FORMAT = "%Y-%m-%d %H:%M"
@@ -144,6 +149,7 @@ def calculate_average_interval(all_times, DB_TIME_FORMAT):
 		return 0
 	return sum(intervals) / len(intervals)
 
+# **********************************Short raport*****************************
 @dp.message(F.text == "📋 Стандартний (3 дні)")
 async def standard_report(message: types.Message):
 	feeds, diapers, sleep, all_times = database.get_full_report_data(days=2)
@@ -175,19 +181,49 @@ async def standard_report(message: types.Message):
 
 	await message.answer("\n".join(lines), parse_mode="Markdown", reply_markup=keyboards.main_menu())
 
+# *******************************Monthly raport******************************
 @dp.message(F.text == "📅 Місячний звіт (30 днів)")
 async def monthly_report(message: types.Message):
 	sum_ml, count_diapers, avg_sleep = database.get_monthly_report_data(30)
+	weight_data = weight_service.get_monthly_analytics()
 	text = (
 		f"📊 **Аналітика за місяць**\n"
 		f"━━━━━━━━━━━━━━━\n"
-		f"🍼 З'їдено всього: **{sum_ml} л**\n"
-		f"🧷 Підгузків: **{count_diapers} шт**\n"
+		f"🍼 Спожито суміші: **{sum_ml} л**\n"
+		f"🧷 Використано підгузків: **{count_diapers} шт**\n"
 		f"😴 Сон (сер. за добу): **{avg_sleep} год**\n"
-		f"━━━━━━━━━━━━━━━"
+		f"━━━━━━━━━━━━━━━\n"
+		f"{weight_data}"
 	)
 
-	await message.answer(text, parse_mode="Markdown", reply_markup=keyboards.main_menu())
+	await message.answer(
+		text,
+		parse_mode="Markdown",
+		reply_markup=keyboards.main_menu()
+	)
+
+# *******************************Weight******************************
+@dp.message(F.text == "⚖️ Вага")
+async def weight_menu(message: types.Message):
+	response = "Введіть вагу малюка в грамах:"
+	await message.answer(
+		response,
+		parse_mode="Markdown"
+	)
+
+@dp.message(lambda m: m.text.isdigit())
+async def handle_weight_input(message: types.Message):
+	result_text = weight_service.add_new_weight(
+		message.from_user.full_name,
+		message.text
+	)
+
+	await message.answer(
+		result_text,
+		parse_mode="Markdown",
+		reply_markup=keyboards.main_menu()
+	)
+
 
 async def main():
 	database.init_db()
