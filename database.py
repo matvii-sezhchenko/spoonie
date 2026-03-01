@@ -1,8 +1,8 @@
 import sqlite3
 import logging
+from schema import TABLES
 from datetime import datetime, timedelta
 
-# Новий стандарт формату дат
 TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 DB_NAME = 'baby_tracker.db'
@@ -11,38 +11,17 @@ def get_connection():
 	return sqlite3.connect(DB_NAME)
 
 def init_db():
-	with get_connection() as conn:
-		cursor = conn.cursor()
-
-		cursor.execute('''
-			CREATE TABLE IF NOT EXISTS feedings (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				user_name TEXT,
-				volume_ml INTEGER,
-				timestamp TEXT
-			)
-		''')
-
-		cursor.execute('''
-			CREATE TABLE IF NOT EXISTS sleep (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				user_name TEXT,
-				start_time TEXT,
-				end_time TEXT
-			)
-		''')
-
-		cursor.execute('''
-			CREATE TABLE IF NOT EXISTS diapers(
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				user TEXT,
-				type TEXT,
-				timestamp TEXT
-			)
-		''')
-
-		conn.commit()
-		logging.info("База даних успішно ініціалізована за стандартом YYYY-MM-DD")
+	try:
+		with get_connection() as conn:
+			cursor = conn.cursor()
+			for table_name, sql_query in TABLES.items():
+				cursor.execute(sql_query)
+				logging.info(f'Таблиця {table_name} перевірена/створена.')
+			conn.commit()
+			logging.info("База даних успішно ініціалізована.")
+	except Exception as e:
+		logging.error(f"Помилка ініціалізації БД: {e}")
+	
 
 def add_feeding(user_name, volume):
 	with get_connection() as conn:
