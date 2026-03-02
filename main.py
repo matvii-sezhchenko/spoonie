@@ -3,6 +3,9 @@ import logging
 import os
 
 import io
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from datetime import datetime
 
@@ -11,7 +14,6 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 # Custom modules
-import tokenTelegram
 import database
 import keyboards
 import config_buttons as btn
@@ -29,7 +31,7 @@ logging.basicConfig(level=logging.INFO)
 DB_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
-bot = Bot(token=tokenTelegram.API_TOKEN_BABY_TRACKER)
+bot = Bot(token=os.getenv("BOT_TOKEN"))
 
 dp = Dispatcher()
 
