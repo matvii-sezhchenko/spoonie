@@ -4,9 +4,6 @@ import os
 
 import io
 
-import matplotlib
-matplotlib.use('Agg')
-
 from datetime import datetime
 
 from aiogram import Bot, Dispatcher, types, F
