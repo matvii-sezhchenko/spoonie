@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 
-import matplotlib.pyplot as plt
 import io
 
 import matplotlib
