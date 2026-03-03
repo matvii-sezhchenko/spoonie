@@ -22,11 +22,13 @@ import config_buttons as btn
 from services.weight_service import WeightService
 from services.growth_service import GrowthService
 from services.feeding_service import FeedingService
+from services.sleep_service import SleepService
 from states import BabyStats
 
 weight_service = WeightService()
 growth_service = GrowthService()
 feeding_service = FeedingService()
+sleep_service = SleepService()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -88,6 +90,21 @@ async def process_feeding(message: types.Message, state: FSMContext):
 
 	await state.clear()
 
+#********************************************Sleeping**********************************
+@dp.message(F.text == btn.BTN_SLEEP)
+async def process_sleep(message: types.Message):
+	success, text_active_session = sleep_service.get_active_session()
+	result_text = None
+
+	if success:
+		result_text = sleep_service.close_sleep_session()
+	else:
+		result_text = sleep_service.reg_sleep(message.from_user.first_name)
+
+	await message.answer(
+		result_text,
+		reply_markup=keyboards.main_menu()
+	)
 
 @dp.message(F.text == btn.BTN_DEFECATIONS)
 async def show_diaper_menu(message: types.Message):
@@ -118,23 +135,6 @@ async def close_active_sleep_if_exists (message: types.Message):
 			f"Малюк заснув о {start_time} (відмітив {start_user}).\n")
 		await message.answer(text, parse_mode="Markdown")
 
-@dp.message(F.text == btn.BTN_SLEEP)
-async def process_sleep(message: types.Message):
-	user = message.from_user.first_name
-	active_sleep = database.get_active_sleep()
-
-	if not active_sleep:
-		database.start_sleep(user)
-		await message.answer(f"💤 {user} відмітив, що малюк заснув.")
-	else:
-		start_id, start_time, start_user = active_sleep
-		database.finish_sleep()
-		await message.answer(
-			f"☀️ Малюк прокинувся!\n\n"
-			f"Заснув о: {start_time} (відмітив {start_user})\n"
-			f"Прокинувся о: {datetime.now().strftime('%H:%M')} (відмітив {user})"
-		)
-
 # **********************************Reports menu*****************************
 @dp.message(F.text == btn.BTN_REPORTS)
 async def show_report_menu(message: types.Message):
@@ -161,6 +161,7 @@ def calculate_average_interval(all_times, DB_TIME_FORMAT):
 @dp.message(F.text == btn.BTN_FROM_THREE_DAYS)
 async def standard_report(message: types.Message):
 	feeding_text = feeding_service.get_three_days_analytics()
+	sleep_text = sleep_service.get_three_days_analytics()
 
 	feeds, diapers, sleep, all_times = database.get_full_report_data(days=2)
 	avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
@@ -186,10 +187,10 @@ async def standard_report(message: types.Message):
 
 		lines.append(f"🗓 **{display_date}:**")
 		lines.append(f"🧷 Підгузків: {d_count} шт")
-		lines.append(f"😴 Сон: {s_hours:.1f} годин\n")
 
 	final_text = (
-		f"{feeding_text}\n" +
+		f"{feeding_text}" 
+		f"{sleep_text}\n" +
 		"\n".join(lines)
 	)
 
@@ -206,11 +207,12 @@ async def monthly_report(message: types.Message):
 	weight_data = weight_service.get_monthly_analytics()
 	growth_data = growth_service.get_monthly_analytics()
 	feeding_data = feeding_service.get_monthly_analytics()
+	sleep_data = sleep_service.get_monthly_analytics()
 	text = (
 		f"📊 **Аналітика за місяць**\n"
 		f"{feeding_data}"
 		f"🧷 Використано підгузків: **{count_diapers} шт**\n"
-		f"😴 Сон (сер. за добу): **{avg_sleep} год**\n"
+		f"{sleep_data}"
 		f"━━━━━━━━━━━━━━━\n"
 		f"{weight_data}"
 		f"{growth_data}"
