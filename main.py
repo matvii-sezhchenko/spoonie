@@ -21,10 +21,12 @@ import config_buttons as btn
 #Classes
 from services.weight_service import WeightService
 from services.growth_service import GrowthService
+from services.feeding_service import FeedingService
 from states import BabyStats
 
 weight_service = WeightService()
 growth_service = GrowthService()
+feeding_service = FeedingService()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,22 +44,50 @@ async def cmd_start(message: types.Message):
 		reply_markup=keyboards.main_menu()
 	)
 
-@dp.message(F.text == btn.BTN_FEEDING)
-async def show_feeding_menu (message: types.Message):
-	last_feed = database.get_last_feeding()
-	
-	if last_feed:
-		volume, timestamp = last_feed
-		time_only = timestamp.split()[1] 
-		text = f"Останнє годування: **{time_only}** ({volume} мл).\n\nСкільки малюк з'їв зараз?"
-	else:
-		text = "Даних про годування ще немає. Скільки малюк з'їв?"
+@dp.message(F.text == btn.BTN_CANCEL)
+async def cancel_action(message: types.Message, state: FSMContext):
+	current_state = await state.get_state()
 
+	if current_state is None:
+		await message.answer(
+			"Дію скасовано ❌",
+			reply_markup=keyboards.main_menu()
+		)
+
+	await state.clear()
+	await message.answer(
+		"Дію скасовано ❌",
+		reply_markup=keyboards.main_menu()
+	)
+
+#****************************FEEDINGS*********************************
+@dp.message(F.text == btn.BTN_FEEDING)
+async def show_feeding_menu (message: types.Message, state: FSMContext):
+	text: str = feeding_service.get_one_day()
+	await state.set_state(BabyStats.waiting_for_feeding_ml)
 	await message.answer(
 		text, 
 		reply_markup=keyboards.feeding_levels(),
 		parse_mode="Markdown"
 	)
+
+@dp.message(BabyStats.waiting_for_feeding_ml)
+async def process_feeding(message: types.Message, state: FSMContext):
+	success, result_text = feeding_service.add_new_feeding(
+		message.from_user.full_name,
+		message.text
+	)
+
+	if success:
+		await close_active_sleep_if_exists(message)
+
+	await message.answer(
+		result_text,
+		reply_markup=keyboards.main_menu()
+	)
+
+	await state.clear()
+
 
 @dp.message(F.text == btn.BTN_DEFECATIONS)
 async def show_diaper_menu(message: types.Message):
@@ -87,31 +117,6 @@ async def close_active_sleep_if_exists (message: types.Message):
 			f"ℹ️ **Автоматично закрито сон**\n"
 			f"Малюк заснув о {start_time} (відмітив {start_user}).\n")
 		await message.answer(text, parse_mode="Markdown")
-
-@dp.message(F.text.endswith("мл"))
-async def process_feeding(message: types.Message):
-	user = message.from_user.first_name
-
-	try:
-		volume = int (message.text.split()[0])
-		database.add_feeding(user, volume)
-
-		await close_active_sleep_if_exists(message)
-		
-		await message.answer(
-			f"✅ Записано: {volume} мл ({user})",
-			reply_markup=keyboards.main_menu()
-		)
-	except Exception as e:
-		logging.error(f"Помилка при записі годування {e}")
-		await message.answer("Ой, щось пішло не за планом")
-
-@dp.message(F.text == btn.BTN_CANCEL)
-async def cancel_action(message: types.Message):
-	await message.answer(
-		"Повернено в головне меню",
-		reply_markup=keyboards.main_menu()
-	)
 
 @dp.message(F.text == btn.BTN_SLEEP)
 async def process_sleep(message: types.Message):
@@ -155,6 +160,8 @@ def calculate_average_interval(all_times, DB_TIME_FORMAT):
 # **********************************Short raport*****************************
 @dp.message(F.text == btn.BTN_FROM_THREE_DAYS)
 async def standard_report(message: types.Message):
+	feeding_text = feeding_service.get_three_days_analytics()
+
 	feeds, diapers, sleep, all_times = database.get_full_report_data(days=2)
 	avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
 	avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
@@ -178,11 +185,19 @@ async def standard_report(message: types.Message):
 			display_date = date_str
 
 		lines.append(f"🗓 **{display_date}:**")
-		lines.append(f"🍼 Годувань: {f_count} (всього {f_vol} мл)")
 		lines.append(f"🧷 Підгузків: {d_count} шт")
 		lines.append(f"😴 Сон: {s_hours:.1f} годин\n")
 
-	await message.answer("\n".join(lines), parse_mode="Markdown", reply_markup=keyboards.main_menu())
+	final_text = (
+		f"{feeding_text}\n" +
+		"\n".join(lines)
+	)
+
+	await message.answer(
+		final_text,
+		parse_mode="Markdown",
+		reply_markup=keyboards.main_menu()
+	)
 
 # *******************************Monthly raport******************************
 @dp.message(F.text == btn.BTN_FROM_MONTH)
@@ -190,10 +205,10 @@ async def monthly_report(message: types.Message):
 	sum_ml, count_diapers, avg_sleep = database.get_monthly_report_data(30)
 	weight_data = weight_service.get_monthly_analytics()
 	growth_data = growth_service.get_monthly_analytics()
+	feeding_data = feeding_service.get_monthly_analytics()
 	text = (
 		f"📊 **Аналітика за місяць**\n"
-		f"━━━━━━━━━━━━━━━\n"
-		f"🍼 Спожито суміші: **{sum_ml} л**\n"
+		f"{feeding_data}"
 		f"🧷 Використано підгузків: **{count_diapers} шт**\n"
 		f"😴 Сон (сер. за добу): **{avg_sleep} год**\n"
 		f"━━━━━━━━━━━━━━━\n"
