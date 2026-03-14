@@ -92,8 +92,8 @@ class FeedingService:
         )
     
     def get_one_day(self):
-        deys = 1
-        history = self.dao.get_feeding_history(days=deys)
+        days = 0
+        history = self.dao.get_feeding_history(days=days)
 
         if not history:
             return "Дані, стосовно споживання їжі, відсутні."
