@@ -122,7 +122,6 @@ class SleepService:
         avg_minutes = total_minutes / final_count_days
 
         return(
-            f"━━━━━━━━━━━━━━━\n"
-            f"🕒 Cередня тривалість сну за {final_count_days}: {format_hour_minutes(int(avg_minutes))}\n"
+            f"🕒 Cередня тривалість сну: {format_hour_minutes(int(avg_minutes))}\n"
             f"━━━━━━━━━━━━━━━\n"
         )

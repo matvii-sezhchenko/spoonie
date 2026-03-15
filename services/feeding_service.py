@@ -50,8 +50,8 @@ class FeedingService:
 
         return(
             f"━━━━━━━━━━━━━━━\n"
-            f"🥤 Спожито усього за 3 доби: {total_volume}\n"
-            f"⚖️ Середньо-спожитий об'єм за три доби: {abg_feeding} мл\n"
+            f"🥤 Спожито усього: {total_volume}\n"
+            f"⚖️ Середньо-спожитий об'єм: {abg_feeding} мл\n"
             f"━━━━━━━━━━━━━━━\n"
             f"Спожито за {today}: {daily_volumes[today]}\n"
             f"Спожито за {yesterday}: {daily_volumes[yesterday]}\n"
@@ -84,8 +84,8 @@ class FeedingService:
 
         return(
             f"━━━━━━━━━━━━━━━\n"
-            f"🥤 Спожито усього за {final_count_days} діб: {total_volume} мл. ({total_volume/1000} л.)\n"
-            f"⚖️ Середньо-спожитий об'єм за {final_count_days} діб: {abg_feeding} мл\n"
+            f"🥤 Спожито усього: {total_volume} мл. ({total_volume/1000} л.)\n"
+            f"⚖️ Середньо-спожитий об'єм: {abg_feeding} мл\n"
             f"👤 Останній годував(ла): {who_last_feeded}\n"
             f"🍼 Останній спожитий об'єм: {last_feeding}\n"
             f"━━━━━━━━━━━━━━━\n"
