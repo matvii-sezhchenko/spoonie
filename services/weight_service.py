@@ -36,7 +36,6 @@ class WeightService:
 			trend += f"{icon}{diff}г ({diff/1000:.2f} кг.)"
 
 		return(
-			f"📊 **Вага за 30 днів:**\n"
 			f"⚖️ Поточна: **{current_weight} г**\n"
 			f"🔄 Динаміка: **{trend}**\n"
 			f"👤 Останній запис: {history[0]['user_name']}\n"

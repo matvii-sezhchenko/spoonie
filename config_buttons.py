@@ -1,6 +1,8 @@
 # Constant from buttons:
 #Public button:
 BTN_CANCEL = "🚫 Відмінити"
+BTN_YES = "🟢 Так"
+BTN_NO = "🔴 Ні"
 
 # Main menu:
 BTN_FEEDING = "🍼 Годування"
@@ -12,7 +14,8 @@ BTN_REPORTS = "📊 Звіти"
 #Defecations menu:
 BTN_PEEPEE = "💦 По-малому"
 BTN_POOPOO = "💩 По-великому"
-BTN_ALL_DIAPER = "🌟 Підгузок повний"
+BTN_JACKPOT = "🌟 Усе разом"
+BTN_USE_DIAPER = "🩲 Використано підгузок"
 BTN_BURPED = "🤮 Зригнув"
 
 #Report menu:

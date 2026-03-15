@@ -36,7 +36,6 @@ class GrowthService:
 			trend += f"{icon}{diff} см"
 
 		return(
-			f"📊 **Зріст за 30 днів:**\n"
 			f"📏 Поточний: **{current_growth} см**\n"
 			f"🔄 Динаміка: **{trend}**\n"
 			f"👤 Останній запис: {history[0]['user_name']}\n"
