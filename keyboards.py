@@ -15,7 +15,7 @@ def main_menu () -> ReplyKeyboardMarkup:
 
 def feeding_levels () -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
-	for ml in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 150, 180, 210]:
+	for ml in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130]:
 		builder.button(text=f"{ml} мл")
 	builder.adjust(3)
 
