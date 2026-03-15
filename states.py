@@ -4,3 +4,5 @@ class BabyStats(StatesGroup):
 	waiting_for_weight = State()
 	waiting_for_growth = State()
 	waiting_for_feeding_ml = State()
+	waiting_for_defecations = State()
+	waiting_for_diaper_use = State()

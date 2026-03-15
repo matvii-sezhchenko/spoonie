@@ -2,38 +2,37 @@ import asyncio
 import logging
 import os
 
-import io
+#env import
 from dotenv import load_dotenv
-
 load_dotenv()
-
-from datetime import datetime
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 # Custom modules
-import database
 import keyboards
 import config_buttons as btn
 
 #Classes
+from services.base_service import BaseService
 from services.weight_service import WeightService
 from services.growth_service import GrowthService
 from services.feeding_service import FeedingService
 from services.sleep_service import SleepService
+from services.defecation_service import DefecationService
+from services.diaper_service import DiaperService
 from states import BabyStats
 
+base_service = BaseService()
 weight_service = WeightService()
 growth_service = GrowthService()
 feeding_service = FeedingService()
 sleep_service = SleepService()
+defecation_service = DefecationService()
+diaper_service = DiaperService()
 
 logging.basicConfig(level=logging.INFO)
-
-DB_TIME_FORMAT = "%Y-%m-%d %H:%M"
-
 
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 
@@ -106,123 +105,100 @@ async def process_sleep(message: types.Message):
 		reply_markup=keyboards.main_menu()
 	)
 
+#********************************************Defecation********************************
+
 @dp.message(F.text == btn.BTN_DEFECATIONS)
-async def show_diaper_menu(message: types.Message):
-	await message.answer("Що саме зачудив?", reply_markup=keyboards.diaper_menu())
+async def show_defecation_menu(message: types.Message, state: FSMContext):
+	await state.set_state(BabyStats.waiting_for_defecations)
+	await message.answer(
+		"Що саме зачудив?", 
+		reply_markup=keyboards.defecation_menu()
+	)
 
-@dp.message(F.text.in_([btn.BTN_PEEPEE, btn.BTN_POOPOO, btn.BTN_ALL_DIAPER, btn.BTN_BURPED]))
-async def process_diaper(message: types.Message):
+@dp.message(F.text == btn.BTN_PEEPEE, BabyStats.waiting_for_defecations)
+async def reg_peepee(message: types.Message, state: FSMContext):
 	user = message.from_user.first_name
-	diaper_type = message.text
-	await close_active_sleep_if_exists(message)
+	success, result_text = defecation_service.fix_peepee(user)
+	result_text = result_text + "\n" + "Чи використано підгузок?"
+
+	if success:
+		await close_active_sleep_if_exists(message)
 	
-	database.add_diaper(user, diaper_type)
+	await message.answer(
+		f"{result_text}",
+		reply_markup=keyboards.diaper_menu()
+	)
+
+	await state.set_state(BabyStats.waiting_for_diaper_use)
+
+@dp.message(F.text == btn.BTN_POOPOO, BabyStats.waiting_for_defecations)
+async def reg_poopoo(message: types.Message, state: FSMContext):
+	user = message.from_user.first_name
+	success, result_text = defecation_service.fix_poopoo(user)
+	result_text = result_text + "\n" + "Чи використано підгузок?"
+
+	if success:
+		await close_active_sleep_if_exists(message)
 	
 	await message.answer(
-		f"✅ Записано: {diaper_type} ({user})",
-		reply_markup=keyboards.main_menu()
+		f"{result_text}",
+		reply_markup=keyboards.diaper_menu()
 	)
 
-async def close_active_sleep_if_exists (message: types.Message):
-	active_sleep = database.get_active_sleep()
+	await state.set_state(BabyStats.waiting_for_diaper_use)
 
-	if active_sleep:
-		database.finish_sleep_by_action()
+@dp.message(F.text == btn.BTN_JACKPOT, BabyStats.waiting_for_defecations)
+async def reg_jackpot(message: types.Message, state: FSMContext):
+	user = message.from_user.first_name
+	success_peepee, result_text_peepee = defecation_service.fix_peepee(user)
+	success_poopoo, result_text_poopoo = defecation_service.fix_poopoo(user)
+	result_text = result_text_peepee + "\n" + result_text_poopoo + "\n" + "Чи використано підгузок?"
 
-		start_id, start_time, start_user = active_sleep
-		text = (
-			f"ℹ️ **Автоматично закрито сон**\n"
-			f"Малюк заснув о {start_time} (відмітив {start_user}).\n")
-		await message.answer(text, parse_mode="Markdown")
-
-# **********************************Reports menu*****************************
-@dp.message(F.text == btn.BTN_REPORTS)
-async def show_report_menu(message: types.Message):
-	await message.answer("Оберіть тип звіту:", reply_markup=keyboards.report_menu())
-
-def calculate_average_interval(all_times, DB_TIME_FORMAT):
-	intervals = []
-	for i in range(len(all_times)-1):
-		try:
-			t1 = datetime.strptime(all_times[i], DB_TIME_FORMAT)
-			t2 = datetime.strptime(all_times[i+1], DB_TIME_FORMAT)
-			diff = abs((t1 - t2).total_seconds() / 60)
-
-			if 30 < diff < 600:
-				intervals.append(diff)
-		except (ValueError, TypeError):
-			continue
-
-	if not intervals:
-		return 0
-	return sum(intervals) / len(intervals)
-
-# **********************************Short raport*****************************
-@dp.message(F.text == btn.BTN_FROM_THREE_DAYS)
-async def standard_report(message: types.Message):
-	feeding_text = feeding_service.get_three_days_analytics()
-	sleep_text = sleep_service.get_three_days_analytics()
-
-	feeds, diapers, sleep, all_times = database.get_full_report_data(days=2)
-	avg_int_total = calculate_average_interval(all_times, DB_TIME_FORMAT)
-	avg_h, avg_m = int(avg_int_total // 60), int(avg_int_total % 60)
-	lines = [f"⏱ Середній інтервал годування: **{avg_h:02d}:{avg_m:02d}**\n"]
-
-
-	all_dates = sorted(set(list(feeds.keys()) + list(diapers.keys()) + list(sleep.keys())), reverse=True)
-
-	if not all_dates:
-		await message.answer("Статистика поки порожня. Додайте перші дані!", reply_markup=keyboards.main_menu())
-		return
-
-	for date_str in all_dates:
-		f_count, f_vol = feeds.get(date_str, (0, 0))
-		d_count = diapers.get(date_str, 0)
-		s_hours = sleep.get(date_str, 0)
-
-		try:
-			display_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m")
-		except ValueError:
-			display_date = date_str
-
-		lines.append(f"🗓 **{display_date}:**")
-		lines.append(f"🧷 Підгузків: {d_count} шт")
-
-	final_text = (
-		f"{feeding_text}" 
-		f"{sleep_text}\n" +
-		"\n".join(lines)
-	)
-
+	if success_peepee or success_poopoo:
+		await close_active_sleep_if_exists(message)
+	
 	await message.answer(
-		final_text,
-		parse_mode="Markdown",
-		reply_markup=keyboards.main_menu()
+		f"{result_text}",
+		reply_markup=keyboards.diaper_menu()
 	)
 
-# *******************************Monthly raport******************************
-@dp.message(F.text == btn.BTN_FROM_MONTH)
-async def monthly_report(message: types.Message):
-	sum_ml, count_diapers, avg_sleep = database.get_monthly_report_data(30)
-	weight_data = weight_service.get_monthly_analytics()
-	growth_data = growth_service.get_monthly_analytics()
-	feeding_data = feeding_service.get_monthly_analytics()
-	sleep_data = sleep_service.get_monthly_analytics()
-	text = (
-		f"📊 **Аналітика за місяць**\n"
-		f"{feeding_data}"
-		f"🧷 Використано підгузків: **{count_diapers} шт**\n"
-		f"{sleep_data}"
-		f"━━━━━━━━━━━━━━━\n"
-		f"{weight_data}"
-		f"{growth_data}"
-	)
+	await state.set_state(BabyStats.waiting_for_diaper_use)
 
+@dp.message(F.text == btn.BTN_BURPED, BabyStats.waiting_for_defecations)
+async def reg_burped(message: types.Message, state: FSMContext):
+	user = message.from_user.first_name
+	success, result_text = defecation_service.fix_burped(user)
+
+	if success:
+		await close_active_sleep_if_exists(message)
+	
 	await message.answer(
-		text,
-		parse_mode="Markdown",
+		f"{result_text}",
 		reply_markup=keyboards.main_menu()
 	)
+
+	await state.clear()
+
+@dp.message(F.text == btn.BTN_YES, BabyStats.waiting_for_diaper_use)
+async def reg_use_diaper(message: types.Message, state: FSMContext):
+	user = message.from_user.first_name
+	success, result_text = diaper_service.fix_diaper(user)
+	
+	await message.answer(
+		f"{result_text}",
+		reply_markup=keyboards.main_menu()
+	)
+
+	await state.clear()
+
+@dp.message(F.text == btn.BTN_NO, BabyStats.waiting_for_diaper_use)
+async def diaper_not_use(message: types.Message, state: FSMContext):	
+	await message.answer(
+		f"🥲 Підгузок не використаний",
+		reply_markup=keyboards.main_menu()
+	)
+
+	await state.clear()
 
 # *******************************Metrics******************************
 @dp.message(F.text == btn.BTN_METRIC)
@@ -278,8 +254,75 @@ async def handle_growth_input(message: types.Message, state: FSMContext):
 	)
 	await state.clear()
 
+# **********************************Reports menu*****************************
+@dp.message(F.text == btn.BTN_REPORTS)
+async def show_report_menu(message: types.Message):
+	await message.answer("Оберіть тип звіту:", reply_markup=keyboards.report_menu())
+
+# **********************************Short raport*****************************
+@dp.message(F.text == btn.BTN_FROM_THREE_DAYS)
+async def standard_report(message: types.Message):
+	feeding_text = feeding_service.get_three_days_analytics()
+	sleep_text = sleep_service.get_three_days_analytics()
+	defecation_text = defecation_service.get_three_days_analytics()
+	diaper_text = diaper_service.get_three_days_analytics()
+
+	final_text = (
+		f"{feeding_text}" 
+		f"{sleep_text}"
+		f"{defecation_text}"
+		f"{diaper_text}"
+	)
+
+	await message.answer(
+		final_text,
+		parse_mode="Markdown",
+		reply_markup=keyboards.main_menu()
+	)
+
+# *******************************Monthly raport******************************
+@dp.message(F.text == btn.BTN_FROM_MONTH)
+async def monthly_report(message: types.Message):
+	weight_data = weight_service.get_monthly_analytics()
+	growth_data = growth_service.get_monthly_analytics()
+	feeding_data = feeding_service.get_monthly_analytics()
+	sleep_data = sleep_service.get_monthly_analytics()
+	defecation_data = defecation_service.get_monthly_analytics()
+	diaper_data = diaper_service.get_month_analytics()
+
+	text = (
+		f"📊 **Аналітика за місяць**\n"
+		f"{feeding_data}"
+		f"{defecation_data}"
+		f"{diaper_data}"
+		f"{sleep_data}"
+		f"{weight_data}"
+		f"{growth_data}"
+	)
+
+	await message.answer(
+		text,
+		parse_mode="Markdown",
+		reply_markup=keyboards.main_menu()
+	)
+
+async def close_active_sleep_if_exists (message: types.Message):
+	success, text_result = sleep_service.get_active_session()
+
+	if success:
+		await message.answer(
+			text_result,
+			parse_mode="Markdown"
+		)
+		
+		text_result = sleep_service.close_sleep_session()
+		await message.answer(
+			text_result,
+			parse_mode="Markdown"
+		)
+
 async def main():
-	database.init_db()
+	base_service.initDB()
 	print("Бот запущений")
 	await dp.start_polling(bot)
 

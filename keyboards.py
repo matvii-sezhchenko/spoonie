@@ -24,13 +24,21 @@ def feeding_levels () -> ReplyKeyboardMarkup:
 	builder.attach(cancel_builder)
 	return builder.as_markup(resize_keyboard=True)
 
-def diaper_menu () -> ReplyKeyboardMarkup:
+def defecation_menu () -> ReplyKeyboardMarkup:
 	builder = ReplyKeyboardBuilder()
 	builder.button(text=btn.BTN_PEEPEE)
 	builder.button(text=btn.BTN_POOPOO)
-	builder.button(text=btn.BTN_ALL_DIAPER)
+	builder.button(text=btn.BTN_JACKPOT)
+	builder.button(text=btn.BTN_USE_DIAPER)
 	builder.button(text=btn.BTN_BURPED)
 	builder.button(text=btn.BTN_CANCEL)
+	builder.adjust(2)
+	return builder.as_markup(resize_keyboard=True)
+
+def diaper_menu () -> ReplyKeyboardMarkup:
+	builder = ReplyKeyboardBuilder()
+	builder.button(text=btn.BTN_YES)
+	builder.button(text=btn.BTN_NO)
 	builder.adjust(2)
 	return builder.as_markup(resize_keyboard=True)
 
