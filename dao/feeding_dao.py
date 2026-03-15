@@ -31,7 +31,7 @@ class FeedingDAO(BaseDAO):
                 '''
                     SELECT user_name, volume_ml, timestamp
                     FROM feedings
-                    WHERE timestamp >= datetime('now', ?, 'localtime')
+                    WHERE timestamp >= datetime('now', 'localtime', 'start of day', ?)
                     ORDER BY timestamp DESC
                 ''', (f'-{days} days',)
             )
