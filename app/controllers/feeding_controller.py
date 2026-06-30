@@ -49,7 +49,11 @@ class FeedingController:
         for timestamp, volume, user in records:
             total_volume += volume
 
-            dt = datetime.strptime(timestamp, config.DATE_TIME_FORMAT)
+            if len(timestamp) == 16:
+                dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M")
+            else:
+                dt = datetime.strptime(timestamp, config.DATE_TIME_FORMAT)
+                
             time_str = dt.strftime(config.TIME_FORMAT)
             
             history_lines.append(f"• {time_str} — {volume} мл ({user})")
