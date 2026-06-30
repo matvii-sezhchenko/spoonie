@@ -15,7 +15,6 @@ class FeedingController:
         else:
             return is_success, "Не вдалось записати"
         
-
     def get_timestamp(self) -> str:
         current_date_time = datetime.now()
         return current_date_time.strftime(config.DATE_TIME_FORMAT)
