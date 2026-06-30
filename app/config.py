@@ -9,7 +9,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("Error: BOT_TOKEN not found into file .env")
 
-DATE_TIME_FORMAT = "Y%Y-%m-%d %H:%M:%S"
+DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT_UK = "%d.%m.%Y %H:%M:%S"
 DATE_FORMAT_UK = "%d.%m.%Y"

@@ -6,6 +6,8 @@ from app.repository.database_manager import DatabaseManager
 from app.repository.feeding_repository import FeedingRepository
 from app.controllers.feeding_controller import FeedingController
 
+from app.handlers.feeding_hendles import register_feeding_handlers
+
 async def main ():
     bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()
@@ -15,7 +17,7 @@ async def main ():
 
     feeding_cntr = FeedingController(repository=feeding_repo)
 
-    # register_feeding_view(db, feeding_cntr)
+    register_feeding_handlers(dp, feeding_cntr)
 
     print('Bot is started')
     await dp.start_polling(bot)
