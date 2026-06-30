@@ -27,7 +27,11 @@ class FeedingController:
         if not last_feeding:
             return "=================================\nЗаписи відсутні\n================================="
         
-        dt_object = datetime.strptime(last_feeding.timestamp, config.DATE_TIME_FORMAT)
+        if len(last_feeding.timestamp) == 16:
+            dt_object = datetime.strptime(last_feeding.timestamp, "%Y-%m-%d %H:%M")
+        else:
+            dt_object = datetime.strptime(last_feeding.timestamp, config.DATE_TIME_FORMAT)
+
         only_time = dt_object.strftime(config.TIME_FORMAT)
 
         return f"""====================================
