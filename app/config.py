@@ -11,7 +11,7 @@ if not BOT_TOKEN:
 
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 DATE_FORMAT = "%Y-%m-%d"
-DATE_TIME_FORMAT_UK = "%d.%m.%Y %H:%M:%S"
+DATE_TIME_FORMAT_UK = "%d.%m.%Y %H:%M"
 DATE_FORMAT_UK = "%d.%m.%Y"
 TIME_FORMAT = "%H:%M"
 

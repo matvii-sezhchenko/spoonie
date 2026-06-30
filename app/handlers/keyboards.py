@@ -1,6 +1,5 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from config import TIMER_SET_FULL, TIMER_SET_ONE_HALF, TIMER_SET_HOUR
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()

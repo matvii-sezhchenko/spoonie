@@ -47,8 +47,21 @@ async def handle_user_input(message: Message, state: FSMContext, mixture_control
         await message.answer("Будь ласка, оберіть час із кнопок або введіть число.")
         return
     
+    text_answer = mixture_controller.start_timer(message.from_user.full_name, duration_minutes=duration_minutes)
+    
     await state.clear()
     await message.answer(
-        f"Таймер запущено на {duration_minutes} хв!",
+        text_answer,
         reply_markup=get_main_keyboard()
     )
+
+@router.message(F.text == "Показати таймер")
+async def show_timer(message: Message, mixture_controller: MixtureController):
+    response_text = mixture_controller.get_time_left()
+    await message.answer(response_text, reply_markup=get_main_keyboard())
+
+
+@router.message(F.text == "Скинути таймер придатності")
+async def reset_timer(message: Message, mixture_controller: MixtureController):
+    response_text = mixture_controller.reset_timer()
+    await message.answer(response_text, reply_markup=get_main_keyboard())

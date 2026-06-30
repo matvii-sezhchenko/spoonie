@@ -7,7 +7,7 @@ from app.repository.feeding_repository import FeedingRepository
 from app.controllers.feeding_controller import FeedingController
 from app.controllers.mixture_controller import MixtureController
 
-from app.handlers import main_handlers, feeding_handlers, timer_handlers
+from app.handlers import main_hendles, timer_hendles, feeding_hendles
 
 async def main ():
     bot = Bot(token=config.BOT_TOKEN)
@@ -19,9 +19,9 @@ async def main ():
     feeding_cntr = FeedingController(repository=feeding_repo)
     mixture_cntr = MixtureController()
 
-    dp.include_router(main_handlers.router)
-    dp.include_router(feeding_handlers.router)
-    dp.include_router(timer_handlers.router)
+    dp.include_router(main_hendles.router)
+    dp.include_router(feeding_hendles.router)
+    dp.include_router(timer_hendles.router)
 
     print('Bot is started')
     await dp.start_polling(
