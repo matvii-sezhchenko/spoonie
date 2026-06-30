@@ -2,7 +2,7 @@ import sqlite3
 from typing import List
 from app.repository.database_manager import DatabaseManager
 from app.models.feeding import Feeding
-from app.repository.feeding_queries import INSERT_FEEDING, GET_ALL_FEEDINGS, DELETE_FEEDING
+from app.repository.feeding_queries import INSERT_FEEDING, GET_ALL_FEEDINGS, DELETE_FEEDING, GET_LAST_FEEDING
 
 class FeedingRepository:
     def __init__(self, db_manager: DatabaseManager):
@@ -46,3 +46,19 @@ class FeedingRepository:
             conn.commit()
 
             return cursor.rowcount > 0
+        
+    def get_last_record(self) -> Optional[Feeding]:
+        with self.db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(GET_LAST_FEEDING)
+            row = cursor.fetchone()
+
+            if not row:
+                return None
+            
+            return Feeding(
+                id=row[0],
+                user_name=row[1],
+                volume_ml=row[2],
+                timestamp=row[3]
+            )

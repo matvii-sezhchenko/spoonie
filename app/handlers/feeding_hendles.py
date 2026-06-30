@@ -24,9 +24,10 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @router.message(F.text == "Годування")
 async def start_feeding(message: Message, state: FSMContext):
+    info_text = _controller.get_last_feeding()
     await state.set_state(FeedingStates.waiting_for_volume)
     await message.answer(
-        "Оберіть стандартний об'єм або введіть свій вручну (цифрою):",
+        info_text,
         reply_markup=get_volumes_keyboard()
     )
 
