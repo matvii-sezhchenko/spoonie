@@ -8,11 +8,18 @@ class FeedingRepository:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
 
-    def save (self, feeding: Feeding) -> int:
+    def save (self, feeding: Feeding) -> tuple[bool, int]:
         with self.db_manager.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(INSERT_FEEDING, (feeding.user_name, feeding.volume_ml, feeding.timestamp))
-            return cursor.lastrowid
+
+            genereted_id = cursor.lastrowid
+
+            if genereted_id and genereted_id > 0:
+                return True, genereted_id
+            else:
+                return False, 0
+            
 
     def get_all(self) -> List[Feeding]:
         feedings = []
