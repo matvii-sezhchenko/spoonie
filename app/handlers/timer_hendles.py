@@ -61,7 +61,7 @@ async def show_timer(message: Message, mixture_controller: MixtureController):
     await message.answer(response_text, reply_markup=get_main_keyboard())
 
 
-@router.message(F.text == "Скинути таймер придатності")
+@router.message(F.text == "Скинути таймер")
 async def reset_timer(message: Message, mixture_controller: MixtureController):
     response_text = mixture_controller.reset_timer()
     await message.answer(response_text, reply_markup=get_main_keyboard())

@@ -7,7 +7,7 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
     builder.add(KeyboardButton(text="Годування"))
     builder.add(KeyboardButton(text="Таймер суміши"))
     builder.add(KeyboardButton(text="Показати таймер"))
-    builder.add(KeyboardButton(text="Скинути таймер придатності"))
+    builder.add(KeyboardButton(text="Скинути таймер"))
     builder.add(KeyboardButton(text="Звіт"))
 
     builder.adjust(1,3,1)
