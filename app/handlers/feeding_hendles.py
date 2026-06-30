@@ -12,35 +12,17 @@ class FeedingStates(StatesGroup):
 
 router = Router()
 
-_controller: FeedingController = None
-
-@router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(
-        "Привіт! Я твій бот-трекер. Оберіть дію на клавіатурі нижче:",
-        reply_markup=get_main_keyboard()
-    )
-
 @router.message(F.text == "Годування")
-async def start_feeding(message: Message, state: FSMContext):
-    info_text = _controller.get_last_feeding()
+async def start_feeding(message: Message, state: FSMContext, feeding_controller: FeedingController):
+    info_text = feeding_controller.get_last_feeding()
     await state.set_state(FeedingStates.waiting_for_volume)
     await message.answer(
         info_text,
         reply_markup=get_volumes_keyboard()
     )
 
-@router.message(StateFilter(FeedingStates.waiting_for_volume), F.text == "Скасувати")
-async def cancel_feeding(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer(
-        "Введення скасовано.",
-        reply_markup=get_main_keyboard()
-    )
-
 @router.message(StateFilter(FeedingStates.waiting_for_volume))
-async def handle_user_input(message: Message, state: FSMContext):
+async def handle_user_input(message: Message, state: FSMContext, feeding_controller: FeedingController):
     user_input = message.text
     user_name = message.from_user.full_name
     
@@ -51,7 +33,7 @@ async def handle_user_input(message: Message, state: FSMContext):
         return
 
     valid_number = int(user_input)
-    is_success, response_text = _controller.add_feeding(user_name, valid_number)
+    is_success, response_text = feeding_controller.add_feeding(user_name, valid_number)
 
     await state.clear()
 
@@ -59,8 +41,3 @@ async def handle_user_input(message: Message, state: FSMContext):
         text=response_text,
         reply_markup=get_main_keyboard()
     )
-
-def register_feeding_handlers(dp, controller: FeedingController):
-    global _controller
-    _controller = controller
-    dp.include_router(router)
