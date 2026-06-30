@@ -17,3 +17,8 @@ SELECT id, user_name, volume_ml, timestamp
 FROM feedings ORDER BY timestamp DESC
 LIMIT 1;
 """
+
+GET_TODAYS_FEEDINGS = """--sql
+SELECT timestamp, volume_ml, user_name F
+FROM feedings WHERE date(timestamp) = date('now', 'localtime') ORDER BY timestamp ASC;
+"""

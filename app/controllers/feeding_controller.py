@@ -36,4 +36,33 @@ class FeedingController:
 Об'єм: {last_feeding.volume_ml} мл
 ===================================="""
 
+    def get_daily_report(self) -> str:
+        records = self.repository.get_todays_records()
+
+        if not records:
+            return "=================================\n📊 За сьогодні записів ще немає\n================================="
+
+        total_volume = 0
+        feedings_count = len(records)
+        history_lines = []
+
+        for timestamp, volume, user in records:
+            total_volume += volume
+
+            dt = datetime.strptime(timestamp, config.DATE_TIME_FORMAT)
+            time_str = dt.strftime(config.TIME_FORMAT)
+            
+            history_lines.append(f"• {time_str} — {volume} мл ({user})")
+
+        history_text = "\n".join(history_lines)
+
+        return f"""====================================
+📊 ЗВІТ ЗА СЬОГОДНІ
+====================================
+🍼 Всього годувань: {feedings_count}
+💧 Загальний об'єм: {total_volume} мл
+
+📝 Історія:
+{history_text}
+===================================="""
         

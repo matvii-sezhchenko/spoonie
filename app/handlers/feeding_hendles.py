@@ -41,3 +41,8 @@ async def handle_user_input(message: Message, state: FSMContext, feeding_control
         text=response_text,
         reply_markup=get_main_keyboard()
     )
+
+@router.message(F.text == "Звіт")
+async def show_daily_report(message: Message, feeding_controller: FeedingController):
+    response_text = feeding_controller.get_daily_report()
+    await message.answer(response_text, reply_markup=get_main_keyboard())

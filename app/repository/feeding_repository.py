@@ -2,7 +2,7 @@ import sqlite3
 from typing import List
 from app.repository.database_manager import DatabaseManager
 from app.models.feeding import Feeding
-from app.repository.feeding_queries import INSERT_FEEDING, GET_ALL_FEEDINGS, DELETE_FEEDING, GET_LAST_FEEDING
+from app.repository.feeding_queries import INSERT_FEEDING, GET_ALL_FEEDINGS, DELETE_FEEDING, GET_LAST_FEEDING, GET_TODAYS_FEEDINGS
 
 class FeedingRepository:
     def __init__(self, db_manager: DatabaseManager):
@@ -62,3 +62,9 @@ class FeedingRepository:
                 volume_ml=row[2],
                 timestamp=row[3]
             )
+
+    def get_todays_records(self):
+        with self.db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(GET_TODAYS_FEEDINGS)
+            return cursor.fetchall()
