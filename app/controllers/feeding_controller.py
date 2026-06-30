@@ -42,6 +42,11 @@ class FeedingController:
 
     def get_daily_report(self) -> str:
         records = self.repository.get_todays_records()
+        report_title = "📊 ЗВІТ ЗА СЬОГОДНІ"
+
+        if not records:
+            records = self.repository.get_yesterdays_records()
+            report_title = "📊 ЗА СЬОГОДНІ ПУСТО. ЗВІТ ЗА ВЧОРА"
 
         if not records:
             return "=================================\n📊 За сьогодні записів ще немає\n================================="
@@ -65,7 +70,7 @@ class FeedingController:
         history_text = "\n".join(history_lines)
 
         return f"""====================================
-📊 ЗВІТ ЗА СЬОГОДНІ
+{report_title}
 ====================================
 🍼 Всього годувань: {feedings_count}
 💧 Загальний об'єм: {total_volume} мл
