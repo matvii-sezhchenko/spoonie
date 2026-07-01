@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.models.feeding import Feeding
 from app import config
 from datetime import datetime
@@ -41,11 +41,13 @@ class FeedingController:
 ===================================="""
 
     def get_daily_report(self) -> str:
-        records = self.repository.get_todays_records()
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        records = self.repository.get_records_by_date(today_str)
         report_title = "📊 ЗВІТ ЗА СЬОГОДНІ"
 
         if not records:
-            records = self.repository.get_yesterdays_records()
+            records = self.repository.get_records_by_date(yesterday_str)
             report_title = "📊 ЗА СЬОГОДНІ ПУСТО. ЗВІТ ЗА ВЧОРА"
 
         if not records:

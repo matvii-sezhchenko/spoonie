@@ -27,3 +27,8 @@ GET_YESTERDAYS_FEEDINGS = """--sql
 SELECT timestamp, volume_ml, user_name FROM feedings WHERE date(timestamp) = date('now', '-1 day', 'localtime')
 ORDER BY timestamp ASC;
 """
+
+GET_FEEDINGS_BY_DATE = """--sql
+SELECT timestamp, volume_ml, user_name FROM feedings WHERE date(timestamp) = ?
+ORDER BY timestamp ASC;
+"""
