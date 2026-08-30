@@ -17,7 +17,7 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
 def get_volumes_keyboard() -> ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()
 
-    quick_volumes = ["30", "60", "90", "120", "130", "150", "160", "200"]
+    quick_volumes = ["35", "70", "100", "135", "170", "200", "235", "270"]
 
     for vol in quick_volumes:
         builder.add(KeyboardButton(text=vol))

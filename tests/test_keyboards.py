@@ -31,7 +31,7 @@ class TestKeyboards(unittest.TestCase):
         self.assertIsInstance(kb, ReplyKeyboardMarkup)
 
         button_texts = [btn.text for row in kb.keyboard for btn in row]
-        expected_volumes = ["30", "60", "90", "120", "130", "150", "160", "200"]
+        expected_volumes = ["35", "70", "100", "135", "170", "200", "235", "270"]
         for vol in expected_volumes:
             self.assertIn(vol, button_texts)
         self.assertIn("❌ Скасувати", button_texts)
