@@ -1,5 +1,5 @@
 import sqlite3
-from typing import List
+from typing import List, Optional
 from app.repository.database_manager import DatabaseManager
 from app.models.feeding import Feeding
 from app.repository.feeding_queries import GET_FEEDINGS_BY_DATE, INSERT_FEEDING, GET_ALL_FEEDINGS, DELETE_FEEDING, GET_LAST_FEEDING, GET_TODAYS_FEEDINGS, GET_YESTERDAYS_FEEDINGS
@@ -42,7 +42,7 @@ class FeedingRepository:
     def delete_by_id(self, feeding_id: int) -> bool:
         with self.db_manager.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(DELETE_FEEDING, (feeding_id))
+            cursor.execute(DELETE_FEEDING, (feeding_id,))
             conn.commit()
 
             return cursor.rowcount > 0
@@ -69,7 +69,7 @@ class FeedingRepository:
             cursor.execute(GET_TODAYS_FEEDINGS)
             return cursor.fetchall()
     
-    def get_todays_records(self):
+    def get_yesterdays_records(self):
         with self.db_manager.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(GET_YESTERDAYS_FEEDINGS)
