@@ -12,7 +12,7 @@ class FeedingStates(StatesGroup):
 
 router = Router()
 
-@router.message(F.text == "Годування")
+@router.message(F.text.in_({"🍼 Годування", "Годування"}))
 async def start_feeding(message: Message, state: FSMContext, feeding_controller: FeedingController):
     info_text = feeding_controller.get_last_feeding()
     await state.set_state(FeedingStates.waiting_for_volume)
@@ -42,7 +42,7 @@ async def handle_user_input(message: Message, state: FSMContext, feeding_control
         reply_markup=get_main_keyboard()
     )
 
-@router.message(F.text == "Звіт")
+@router.message(F.text.in_({"📊 Звіт", "Звіт"}))
 async def show_daily_report(message: Message, feeding_controller: FeedingController):
     response_text = feeding_controller.get_daily_report()
     await message.answer(response_text, reply_markup=get_main_keyboard())
