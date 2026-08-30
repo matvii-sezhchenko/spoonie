@@ -22,5 +22,5 @@ DB_PATH = f"{DB_DIR}/{DB_NAME}"
 TIMER_FILE_PATH = Path(__file__).resolve().parent.parent / "jsons" / "mixture_timer.json"
 TIMER_SET_HOUR = 60
 TIMER_SET_ONE_HALF = 90
-TIMER_SET_FULL = 120
+TIMER_SET_FULL = 110
 

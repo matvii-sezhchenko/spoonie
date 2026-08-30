@@ -39,7 +39,7 @@ async def handle_user_input(message: Message, state: FSMContext, mixture_control
         duration_minutes = config.TIMER_SET_ONE
     elif user_input == "01:30":
         duration_minutes = config.TIMER_SET_ONE_HALF
-    elif user_input == "02:00":
+    elif user_input == "01:50":
         duration_minutes = config.TIMER_SET_FULL
     elif user_input.isdigit():
         duration_minutes = int(user_input)
