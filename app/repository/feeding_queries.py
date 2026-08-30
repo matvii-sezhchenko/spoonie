@@ -19,7 +19,7 @@ LIMIT 1;
 """
 
 GET_TODAYS_FEEDINGS = """--sql
-SELECT timestamp, volume_ml, user_name F
+SELECT timestamp, volume_ml, user_name
 FROM feedings WHERE date(timestamp) = date('now', 'localtime') ORDER BY timestamp ASC;
 """
 
@@ -31,4 +31,8 @@ ORDER BY timestamp ASC;
 GET_FEEDINGS_BY_DATE = """--sql
 SELECT timestamp, volume_ml, user_name FROM feedings WHERE date(timestamp) = ?
 ORDER BY timestamp ASC;
+"""
+
+UPDATE_FEEDING_VOLUME = """--sql
+UPDATE feedings SET volume_ml = ? WHERE id = ?;
 """

@@ -29,18 +29,112 @@ class TestMainHandles(unittest.IsolatedAsyncioTestCase):
 
 
 class TestFeedingHandles(unittest.IsolatedAsyncioTestCase):
-    async def test_start_feeding(self):
+    async def test_start_feeding_with_data(self):
         message = AsyncMock()
         state = AsyncMock(spec=FSMContext)
         controller = MagicMock()
-        controller.get_last_feeding.return_value = "Останнє годування: в 10:00"
+        controller.get_last_feeding_info.return_value = ("Останнє годування: в 10:00", 1)
 
         await feeding_hendles.start_feeding(message, state, controller)
 
-        controller.get_last_feeding.assert_called_once()
+        controller.get_last_feeding_info.assert_called_once()
         state.set_state.assert_awaited_once_with(FeedingStates.waiting_for_volume)
+        self.assertEqual(message.answer.await_count, 2)
+
+    async def test_start_feeding_empty(self):
+        message = AsyncMock()
+        state = AsyncMock(spec=FSMContext)
+        controller = MagicMock()
+        controller.get_last_feeding_info.return_value = ("Записи відсутні", None)
+
+        await feeding_hendles.start_feeding(message, state, controller)
+
+        controller.get_last_feeding_info.assert_called_once()
+        state.set_state.assert_awaited_once_with(FeedingStates.waiting_for_volume)
+        self.assertEqual(message.answer.await_count, 1)
+
+    async def test_on_feed_delete_request(self):
+        callback = AsyncMock()
+        callback.data = "feed_del:42"
+
+        await feeding_hendles.on_feed_delete_request(callback)
+
+        callback.message.edit_reply_markup.assert_awaited_once()
+        callback.answer.assert_awaited_once()
+
+    async def test_on_feed_delete_confirm_success(self):
+        callback = AsyncMock()
+        callback.data = "feed_del_confirm:42"
+        state = AsyncMock(spec=FSMContext)
+        controller = MagicMock()
+        controller.delete_feeding.return_value = (True, "Запис видалено")
+
+        await feeding_hendles.on_feed_delete_confirm(callback, state, controller)
+
+        controller.delete_feeding.assert_called_once_with(42)
+        state.clear.assert_awaited_once()
+        callback.message.edit_text.assert_awaited_once()
+        callback.answer.assert_awaited_once_with("Запис видалено")
+
+    async def test_on_feed_delete_confirm_failure(self):
+        callback = AsyncMock()
+        callback.data = "feed_del_confirm:42"
+        state = AsyncMock(spec=FSMContext)
+        controller = MagicMock()
+        controller.delete_feeding.return_value = (False, "Не вдалося видалити")
+
+        await feeding_hendles.on_feed_delete_confirm(callback, state, controller)
+
+        callback.message.edit_text.assert_awaited_once_with("Не вдалося видалити")
+        callback.answer.assert_awaited_once_with("Помилка")
+
+    async def test_on_feed_delete_cancel(self):
+        callback = AsyncMock()
+        callback.data = "feed_del_cancel:42"
+
+        await feeding_hendles.on_feed_delete_cancel(callback)
+
+        callback.message.edit_reply_markup.assert_awaited_once()
+        callback.answer.assert_awaited_once_with("Видалення скасовано")
+
+    async def test_on_feed_edit_request(self):
+        callback = AsyncMock()
+        callback.data = "feed_edit:42"
+        state = AsyncMock(spec=FSMContext)
+
+        await feeding_hendles.on_feed_edit_request(callback, state)
+
+        state.update_data.assert_awaited_once_with(edit_feeding_id=42)
+        state.set_state.assert_awaited_once_with(FeedingStates.waiting_for_edit_volume)
+        callback.message.answer.assert_awaited_once()
+        callback.answer.assert_awaited_once()
+
+    async def test_handle_edit_user_input_valid(self):
+        message = AsyncMock()
+        message.text = "150"
+        state = AsyncMock(spec=FSMContext)
+        state.get_data.return_value = {"edit_feeding_id": 42}
+        controller = MagicMock()
+        controller.update_feeding_volume.return_value = (True, "Об'єм успішно змінено на 150 мл!")
+
+        await feeding_hendles.handle_edit_user_input(message, state, controller)
+
+        controller.update_feeding_volume.assert_called_once_with(42, 150)
+        state.clear.assert_awaited_once()
         message.answer.assert_awaited_once()
-        self.assertIn("Останнє годування", message.answer.call_args[0][0])
+        self.assertEqual(message.answer.call_args[1]["text"], "Об'єм успішно змінено на 150 мл!")
+
+    async def test_handle_edit_user_input_invalid_non_digit(self):
+        message = AsyncMock()
+        message.text = "не число"
+        state = AsyncMock(spec=FSMContext)
+        controller = MagicMock()
+
+        await feeding_hendles.handle_edit_user_input(message, state, controller)
+
+        controller.update_feeding_volume.assert_not_called()
+        state.clear.assert_not_awaited()
+        message.answer.assert_awaited_once_with("Введіть число, будь ласка.")
 
     async def test_handle_user_input_valid(self):
         message = AsyncMock()

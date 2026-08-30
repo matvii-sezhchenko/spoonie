@@ -47,6 +47,48 @@ class TestFeedingController(unittest.TestCase):
         self.assertIn("Тато", result)
         self.assertIn("130 мл", result)
 
+    def test_delete_feeding_success(self):
+        self.mock_repo.delete_by_id.return_value = True
+        success, msg = self.controller.delete_feeding(1)
+        self.assertTrue(success)
+        self.assertIn("успішно видалено", msg)
+
+    def test_delete_feeding_failure(self):
+        self.mock_repo.delete_by_id.return_value = False
+        success, msg = self.controller.delete_feeding(999)
+        self.assertFalse(success)
+        self.assertIn("Не вдалося видалити", msg)
+
+    def test_update_feeding_volume_success(self):
+        self.mock_repo.update_volume_by_id.return_value = True
+        success, msg = self.controller.update_feeding_volume(1, 150)
+        self.assertTrue(success)
+        self.assertIn("150 мл", msg)
+
+    def test_update_feeding_volume_failure(self):
+        self.mock_repo.update_volume_by_id.return_value = False
+        success, msg = self.controller.update_feeding_volume(999, 150)
+        self.assertFalse(success)
+        self.assertIn("Не вдалося оновити", msg)
+
+    def test_get_last_feeding_info_with_data(self):
+        sample_feeding = Feeding(
+            id=42,
+            user_name="Тато",
+            volume_ml=130,
+            timestamp="2026-08-31 14:45:00"
+        )
+        self.mock_repo.get_last_record.return_value = sample_feeding
+        text, fid = self.controller.get_last_feeding_info()
+        self.assertEqual(fid, 42)
+        self.assertIn("130 мл", text)
+
+    def test_get_last_feeding_info_empty(self):
+        self.mock_repo.get_last_record.return_value = None
+        text, fid = self.controller.get_last_feeding_info()
+        self.assertIsNone(fid)
+        self.assertIn("Записи відсутні", text)
+
     def test_get_last_feeding_with_data_short_format(self):
         sample_feeding = Feeding(
             id=2,

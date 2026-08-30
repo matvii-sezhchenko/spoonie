@@ -87,6 +87,20 @@ class TestRepository(unittest.TestCase):
         result_false = self.repo.delete_by_id(9999)
         self.assertFalse(result_false)
 
+    def test_update_volume_by_id(self):
+        _, fid = self.repo.save(Feeding(user_name="Тато", volume_ml=100, timestamp="2026-08-31 10:00:00"))
+        
+        # Update existing
+        success = self.repo.update_volume_by_id(fid, 150)
+        self.assertTrue(success)
+
+        last = self.repo.get_last_record()
+        self.assertEqual(last.volume_ml, 150)
+
+        # Update non-existent
+        success_false = self.repo.update_volume_by_id(9999, 200)
+        self.assertFalse(success_false)
+
     def test_get_todays_and_yesterdays_records(self):
         # Test method calls without syntax or runtime error
         todays = self.repo.get_todays_records()

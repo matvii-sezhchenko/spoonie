@@ -1,7 +1,6 @@
+from typing import Optional
 from datetime import datetime, timedelta
 from app.models.feeding import Feeding
-from app import config
-from datetime import datetime
 from app import config
 
 class FeedingController:
@@ -18,14 +17,30 @@ class FeedingController:
         else:
             return is_success, "Не вдалось записати"
         
+    def delete_feeding(self, feeding_id: int) -> tuple[bool, str]:
+        is_success = self.repository.delete_by_id(feeding_id)
+        if is_success:
+            return True, "🗑️ Запис годування успішно видалено!"
+        return False, "Не вдалося видалити запис (можливо, він уже видалений)."
+
+    def update_feeding_volume(self, feeding_id: int, new_volume: int) -> tuple[bool, str]:
+        is_success = self.repository.update_volume_by_id(feeding_id, new_volume)
+        if is_success:
+            return True, f"✏️ Об'єм успішно змінено на {new_volume} мл!"
+        return False, "Не вдалося оновити запис."
+
     def get_timestamp(self) -> str:
         current_date_time = datetime.now()
         return current_date_time.strftime(config.DATE_TIME_FORMAT)
     
     def get_last_feeding(self) -> str:
+        text, _ = self.get_last_feeding_info()
+        return text
+
+    def get_last_feeding_info(self) -> tuple[str, Optional[int]]:
         last_feeding = self.repository.get_last_record()
         if not last_feeding:
-            return "=================================\nЗаписи відсутні\n================================="
+            return "=================================\nЗаписи відсутні\n=================================", None
         
         if len(last_feeding.timestamp) == 16:
             dt_object = datetime.strptime(last_feeding.timestamp, "%Y-%m-%d %H:%M")
@@ -34,11 +49,12 @@ class FeedingController:
 
         only_time = dt_object.strftime(config.TIME_FORMAT)
 
-        return f"""====================================
+        text = f"""====================================
 Останнє годування: в {only_time}
 Запис зроблено: {last_feeding.user_name}
 Об'єм: {last_feeding.volume_ml} мл
 ===================================="""
+        return text, last_feeding.id
 
     def get_daily_report(self) -> str:
         today_str = datetime.now().strftime("%Y-%m-%d")
